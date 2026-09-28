@@ -1,11 +1,25 @@
-# Security
+# Қауіпсіздік / Security
 
-This MCP runs locally and can change Premiere Pro projects. Treat an MCP client with access to this server as capable of editing the currently open project.
+## Қазақша
 
-- Use the supported CEP bridge only from trusted local MCP clients.
-- Run `verify_premiere_connection` before an editing workflow and inspect the active project and sequence it reports.
-- Keep Premiere Pro, the CEP bridge, and the MCP client on the same trusted machine.
+FalconCut жергілікті жұмыс істейді және Premiere Pro жобаларын өзгерте алады. Бұл серверге қол жеткізе алатын MCP клиенті ашық тұрған жобаны өңдей алады деп есептеңіз.
+
+- FalconCut панелін тек өзіңіз сенетін MCP клиенттерімен қолданыңыз.
+- Монтаж алдында `verify_premiere_connection` іске қосып, ол көрсеткен жоба мен секвенцияның дұрыс екенін тексеріңіз.
+- Premiere Pro, FalconCut панелі және MCP клиенті бір, сенімді компьютерде болуы керек.
+- Қол қойылмаған CEP архивтерін белгісіз көздерден орнатпаңыз.
+- FalconCut желіге ешқандай сұраныс жібермейді: телеметрия да, жаңарту тексерісі де жоқ ([PRIVACY.md](PRIVACY.md)).
+
+Осалдық тапсаңыз, мәселені ашық issue-де жарияламай, осы репозиторийде GitHub security advisory ашыңыз.
+
+## English
+
+FalconCut runs locally and can change Premiere Pro projects. Treat any MCP client with access to this server as able to edit the open project.
+
+- Use the FalconCut panel only with MCP clients you trust.
+- Run `verify_premiere_connection` before an editing session and check the project and sequence it reports.
+- Keep Premiere Pro, the FalconCut panel, and the MCP client on the same trusted machine.
 - Do not install unsigned CEP archives from untrusted sources.
-- Anonymous usage telemetry is on by default and is sent over HTTPS. It does not include project data, paths, or tool arguments. Opt out with `PREMIERE_MCP_TELEMETRY=0` or the CEP panel checkbox. See [PRIVACY.md](PRIVACY.md).
+- FalconCut makes no network requests: no telemetry and no update checks ([PRIVACY.md](PRIVACY.md)).
 
-To report a vulnerability privately, open a GitHub security advisory for this repository rather than publishing exploit details in an issue.
+To report a vulnerability privately, open a GitHub security advisory for this repository instead of publishing exploit details in an issue.

@@ -8,7 +8,6 @@ import { z } from 'zod';
 import { constants as fsConstants, promises as fs } from 'node:fs';
 import { homedir, platform } from 'node:os';
 import { basename, dirname, extname, join, parse } from 'node:path';
-import { checkForUpdate } from '../../utils/update-check.js';
 import { resolveToolset } from '../search.js';
 import { CEP_FOLDER_NAME, bridgeDir } from '../../brand.js';
 import type { ToolContext, ToolModule } from '../context.js';
@@ -417,7 +416,6 @@ async function getCapabilities(ctx: ToolContext, checkConnection = false): Promi
       transport: 'stdio',
       bridgeDirectory: bridgeDir()
     },
-    update: await checkForUpdate(),
     bridge: {
       cep: {
         status: cepInstalled ? 'installed' : 'not_detected',

@@ -17,8 +17,7 @@ Usage:
   falconcut-mcp --version       Print the installed package version
   falconcut-mcp --help          Show this help
 
-Telemetry is on by default. Set PREMIERE_MCP_TELEMETRY=0 to opt out.
-Update checks are on by default. Set PREMIERE_MCP_UPDATE_CHECK=0 to opt out.
+FalconCut sends no telemetry and makes no network requests.
 Tool search is on by default (search_tools + invoke_tool). Set FALCONCUT_TOOLSET=full to advertise every Premiere tool to the MCP host.
 `);
 }

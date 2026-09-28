@@ -258,133 +258,8 @@
                 }
             } catch (eRead) {}
         }
-        return '1.2.7';
+        return '';
     }
-
-    MCPPremiereBridge.prototype.comparePackageVersions = function(a, b) {
-        var left = String(a).split('.');
-        var right = String(b).split('.');
-        for (var i = 0; i < 3; i++) {
-            var l = parseInt(left[i], 10) || 0;
-            var r = parseInt(right[i], 10) || 0;
-            if (l > r) return 1;
-            if (l < r) return -1;
-        }
-        return 0;
-    };
-
-    MCPPremiereBridge.prototype.shouldOfferUpdate = function(current, latest, snoozedUntil, now) {
-        if (!latest || this.comparePackageVersions(latest, current) <= 0) return false;
-        if (snoozedUntil && now < snoozedUntil) return false;
-        return true;
-    };
-
-    MCPPremiereBridge.prototype.setUpdateBannerVisible = function(visible, latest, current) {
-        var banner = document.getElementById('updateBanner');
-        if (!banner) return;
-        if (visible) banner.removeAttribute('hidden');
-        else banner.setAttribute('hidden', '');
-        var versionEl = document.getElementById('updateBannerVersion');
-        if (versionEl && latest && current) versionEl.textContent = latest + ' available';
-        var copyEl = document.getElementById('updateBannerCopy');
-        if (copyEl && latest && current) {
-            copyEl.textContent = latest + ' is recommended. You have ' + current + '. Copy this, run it in a terminal, then reload this panel.';
-        }
-        var commandEl = document.getElementById('updateCommandInput');
-        if (commandEl) commandEl.value = this.updateInstallCommand();
-    };
-
-    MCPPremiereBridge.prototype.setUpdateBannerStatus = function(message) {
-        var statusEl = document.getElementById('updateBannerStatus');
-        if (statusEl) statusEl.textContent = message || '';
-    };
-
-    MCPPremiereBridge.prototype.setUpdateButtonsDisabled = function(disabled) {
-        var copyBtn = document.getElementById('updateCopyButton');
-        var laterBtn = document.getElementById('updateLaterButton');
-        if (copyBtn) copyBtn.disabled = !!disabled;
-        if (laterBtn) laterBtn.disabled = !!disabled;
-    };
-
-    MCPPremiereBridge.prototype.checkForPackageUpdate = function() {
-        var self = this;
-        var current = readInstalledPackageVersion();
-        var config = readExistingPanelConfig();
-        if (config.updateCheck === false) return;
-        var snoozedUntil = typeof config.updateSnoozedUntil === 'number' ? config.updateSnoozedUntil : 0;
-        if (snoozedUntil > Date.now()) return;
-        var https;
-        try { https = require('https'); } catch (eHttps) { return; }
-        if (!https || typeof https.get !== 'function') return;
-        var request = https.get({
-            hostname: 'registry.npmjs.org',
-            path: '/adobe-premiere-pro-mcp/latest',
-            headers: { Accept: 'application/json', 'User-Agent': 'adobe-premiere-pro-mcp-cep/' + current }
-        }, function(response) {
-            var body = '';
-            response.on('data', function(chunk) { body += chunk; });
-            response.on('end', function() {
-                try {
-                    var parsed = JSON.parse(body);
-                    var latest = parsed && parsed.version ? String(parsed.version) : '';
-                    if (self.shouldOfferUpdate(current, latest, snoozedUntil, Date.now())) {
-                        self.pendingUpdateVersion = latest;
-                        self.setUpdateBannerVisible(true, latest, current);
-                        self.log('Update recommended: ' + latest + ' is available (you have ' + current + ')', 'warning');
-                    }
-                } catch (eParse) {}
-            });
-        });
-        request.on('error', function() {});
-        request.setTimeout(2500, function() { request.abort(); });
-    };
-
-    MCPPremiereBridge.prototype.updateLater = function() {
-        try {
-            var panelConfig = readExistingPanelConfig();
-            panelConfig.updateSnoozedUntil = Date.now() + (7 * 24 * 60 * 60 * 1000);
-            fs.writeFileSync(getPanelConfigPath(), JSON.stringify(panelConfig, null, 2));
-            this.setUpdateBannerVisible(false);
-            this.log('Update reminder snoozed for 7 days', 'info');
-        } catch (e) {
-            this.log('Could not snooze the update reminder: ' + e.message, 'error');
-        }
-    };
-
-    MCPPremiereBridge.prototype.updateInstallCommand = function() {
-        return 'npm install -g adobe-premiere-pro-mcp@latest && premiere-pro-mcp --install-cep';
-    };
-
-    MCPPremiereBridge.prototype.copyTextToClipboard = function(text) {
-        try {
-            var input = document.getElementById('updateCommandInput');
-            if (input) {
-                input.value = text;
-                input.focus();
-                input.select();
-                if (document.execCommand && document.execCommand('copy')) return true;
-            }
-        } catch (eSelect) {}
-        try {
-            if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text);
-                return true;
-            }
-        } catch (eClip) {}
-        return false;
-    };
-
-    MCPPremiereBridge.prototype.copyUpdateCommand = function() {
-        var command = this.updateInstallCommand();
-        if (this.copyTextToClipboard(command)) {
-            this.setUpdateBannerStatus('Copied. Paste it in a terminal, then reload this panel.');
-            this.log('Copied the update command', 'info');
-            return true;
-        }
-        this.setUpdateBannerStatus('Copy failed. Select the command and copy it yourself.');
-        this.log('Could not copy the update command', 'error');
-        return false;
-    };
 
     function ensureDirectory(dirPath) {
         if (!dirPath) return null;
@@ -439,7 +314,6 @@
         this.isProcessing = false;
         this.evalScriptBusy = false;
         this.evalScriptQueue = [];
-        this.telemetryEnabled = true;
         this.csInterface = new CSInterface();
         this.init();
     }
@@ -469,7 +343,6 @@
         this.updateUI();
         this.startCommandPolling();
         this.startBridge();
-        this.checkForPackageUpdate();
     };
 
     MCPPremiereBridge.prototype.getTempDirectory = function() {
@@ -778,9 +651,6 @@
                 if (panelConfig.tempDirectory) {
                     this.tempDirectory = sanitizeTempDirectoryInput(panelConfig.tempDirectory);
                 }
-                if (typeof panelConfig.telemetry === 'boolean') {
-                    this.telemetryEnabled = panelConfig.telemetry;
-                }
             }
 
             var candidatePaths = this.tempDirectory ? [this.tempDirectory, getDefaultTempPath()] : [getDefaultTempPath()];
@@ -811,9 +681,6 @@
                     tempEl.value = getDefaultTempPath();
                 }
             }
-
-            var telemetryEl = document.getElementById('telemetryEnabled');
-            if (telemetryEl) telemetryEl.checked = this.telemetryEnabled !== false;
         } catch (e) {}
     };
 
@@ -830,28 +697,10 @@
             fs.writeFileSync(path.join(ensuredTempDir, 'config.json'), JSON.stringify({ tempDirectory: this.tempDirectory }, null, 2));
             var panelConfig = readExistingPanelConfig();
             panelConfig.tempDirectory = this.tempDirectory;
-            panelConfig.telemetry = this.readTelemetryEnabled();
             fs.writeFileSync(getPanelConfigPath(), JSON.stringify(panelConfig, null, 2));
             this.log('Configuration saved', 'info');
         } catch (e) {
             this.log('Error saving config: ' + e.message, 'error');
-        }
-    };
-
-    MCPPremiereBridge.prototype.readTelemetryEnabled = function() {
-        var telemetryEl = document.getElementById('telemetryEnabled');
-        if (telemetryEl) this.telemetryEnabled = !!telemetryEl.checked;
-        return this.telemetryEnabled !== false;
-    };
-
-    MCPPremiereBridge.prototype.saveTelemetryPreference = function() {
-        try {
-            var panelConfig = readExistingPanelConfig();
-            panelConfig.telemetry = this.readTelemetryEnabled();
-            fs.writeFileSync(getPanelConfigPath(), JSON.stringify(panelConfig, null, 2));
-            this.log(this.telemetryEnabled ? 'Anonymous usage data enabled' : 'Anonymous usage data disabled', 'info');
-        } catch (e) {
-            this.log('Error saving telemetry preference: ' + e.message, 'error');
         }
     };
 
@@ -1062,10 +911,7 @@
     window.stopBridge = function() { if (window.bridge) window.bridge.stopBridge(); };
     window.runDiagnostics = function() { if (window.bridge) window.bridge.runDiagnostics(); };
     window.saveConfig = function() { if (window.bridge) window.bridge.saveConfig(); };
-    window.saveTelemetryPreference = function() { if (window.bridge) window.bridge.saveTelemetryPreference(); };
     window.clearLog = function() { if (window.bridge) window.bridge.clearLog(); };
-    window.copyUpdateCommand = function() { if (window.bridge) window.bridge.copyUpdateCommand(); };
-    window.updateLater = function() { if (window.bridge) window.bridge.updateLater(); };
     document.addEventListener('DOMContentLoaded', function() {
         window.bridge = new MCPPremiereBridge();
     });

@@ -598,8 +598,8 @@ describe('PremiereProTools', () => {
           prompts: 10,
         });
         expect(result.liveConnection.checked).toBe(false);
-        expect(result.update.current).toBeTruthy();
-        expect(result.update.available).toBe(false);
+        // FalconCut: npm-нен жаңарту тексерісі алынған, сервер желіге шықпайды
+        expect(result.update).toBeUndefined();
         expect(mockBridge.executeScript).not.toHaveBeenCalled();
       } finally {
         if (previous === undefined) delete process.env.FALCONCUT_TOOLSET;

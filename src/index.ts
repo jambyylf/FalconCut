@@ -9,15 +9,8 @@ import { PremiereProPrompts } from './prompts/index.js';
 import { PremiereProBridge } from './bridge/index.js';
 import { Logger } from './utils/logger.js';
 import { PACKAGE_VERSION } from './version.js';
-import { checkForUpdate } from './utils/update-check.js';
 import { MCP_SERVER_INSTRUCTIONS } from './instructions.js';
 import { MCP_SERVER_NAME } from './brand.js';
-import {
-  getTelemetry,
-  summarizeToolFailure,
-  type Telemetry,
-  type TrackToolCallInput,
-} from './utils/telemetry.js';
 
 type ObjectJsonSchema = Record<string, unknown> & { type: 'object' };
 
@@ -28,11 +21,9 @@ class MCPPremiereProServer {
   private prompts: PremiereProPrompts;
   private bridge: PremiereProBridge;
   private logger: Logger;
-  private telemetry: Telemetry;
 
   constructor() {
     this.logger = new Logger('MCPPremiereProServer');
-    this.telemetry = getTelemetry();
 
     this.bridge = new PremiereProBridge();
     this.tools = new PremiereProTools(this.bridge);
@@ -83,15 +74,9 @@ class MCPPremiereProServer {
     // Execute tool calls
     server.setRequestHandler('tools/call', async (request) => {
       const { name, arguments: args } = request.params;
-      const startedAt = Date.now();
-      const innerName =
-        name === 'invoke_tool' && args && typeof args === 'object' && typeof (args as { name?: unknown }).name === 'string'
-          ? String((args as { name: string }).name)
-          : undefined;
 
       try {
         const result = await this.tools.executeTool(name, args || {});
-        this.recordToolCall(innerName || name, result, Date.now() - startedAt);
         const toolResult: CallToolResult = {
           content: [
             {
@@ -105,7 +90,6 @@ class MCPPremiereProServer {
         return server.projectCallToolResult(toolResult, undefined);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        this.recordToolCall(innerName || name, { success: false, error: errorMessage }, Date.now() - startedAt);
         this.logger.error(`Tool execution failed: ${errorMessage}`);
         
         throw new ProtocolError(
@@ -187,28 +171,6 @@ class MCPPremiereProServer {
     };
   }
 
-  private recordToolCall(name: string, result: unknown, durationMs: number): void {
-    const success =
-      !result ||
-      typeof result !== 'object' ||
-      (result as { success?: unknown }).success !== false;
-    const input: TrackToolCallInput = {
-      tool: name,
-      success,
-      durationMs
-    };
-    if (!success) {
-      const summary = summarizeToolFailure(result);
-      input.errorKind = summary.errorKind;
-      if (summary.errorCode) input.errorCode = summary.errorCode;
-      if (summary.errorFields) input.errorFields = summary.errorFields;
-      if (summary.errorDetail) input.errorDetail = summary.errorDetail;
-      if (summary.retry !== undefined) input.retry = summary.retry;
-      if (summary.status) input.status = summary.status;
-    }
-    this.telemetry.trackToolCall(input);
-  }
-
   async start(): Promise<void> {
     try {
       await this.bridge.initialize();
@@ -220,13 +182,8 @@ class MCPPremiereProServer {
         }
       });
       
+      // FalconCut: телеметрия да, npm жаңарту тексерісі де жоқ — сервер желіге шықпайды.
       this.logger.info('FalconCut MCP server started successfully');
-      this.telemetry.trackServerStarted();
-      void checkForUpdate().then((status) => {
-        if (status.available && !status.snoozed && status.nextStep) {
-          this.logger.warn(status.nextStep);
-        }
-      });
     } catch (error) {
       this.logger.error('Failed to start server:', error);
       throw error;
@@ -241,8 +198,6 @@ class MCPPremiereProServer {
     } catch (error) {
       this.logger.error('Error stopping server:', error);
       throw error;
-    } finally {
-      await this.telemetry.flush();
     }
   }
 }
