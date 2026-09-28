@@ -2,13 +2,14 @@
 
 All notable changes are documented here. Releases use semantic versioning.
 
-## [Unreleased]
+## 0.1.0 — FalconCut: түпнұсқаның 1.2.8 нұсқасына негізделген алғашқы форк
 
-### FalconCut (jambyylf/FalconCut форкы)
+FalconCut нұсқалары 0.1.0-ден басталады. Төмендегі [1.2.8] және одан ескі жазбалар —
+түпнұсқа [hetpatel-11/Adobe_Premiere_Pro_MCP](https://github.com/hetpatel-11/Adobe_Premiere_Pro_MCP) тарихы.
 
 - Ребрендинг: npm пакеті және CLI `falconcut-mcp`, MCP сервері `falconcut`,
   CEP bundle ID `kz.onair.falconcut`, мәзір `Window > Extensions > FalconCut`,
-  көпір папкасы `/tmp/falconcut-bridge`, баптаулар `~/.falconcut/`,
+  уақытша папка `/tmp/falconcut-bridge`, баптаулар `~/.falconcut/`,
   орта айнымалылары `FALCONCUT_BRIDGE_DIR`, `FALCONCUT_TOOLSET`, `FALCONCUT_LANG`.
 - Телеметрия мен npm жаңарту тексерісі толық алынды — FalconCut желіге сұраныс жібермейді.
 - Қазақшалау: `locales/kk.json` (әдепкі) және `locales/en.json`; CEP панелі, CLI,
@@ -21,6 +22,10 @@ All notable changes are documented here. Releases use semantic versioning.
 - Агент ережелері (skill + сервер нұсқауы): қолданушымен қазақша сөйлесу және
   ә ғ қ ң ө ұ ү һ і әріптерін қайта оқып тексеру.
 - README (қазақша), README.en.md, QUICKSTART қайта жазылды; басқа тілдердегі README өшірілді.
+- CEP панелінің жаңа дизайны: қараңғы «шыны» стиль, жергілікті Montserrat қарпі
+  (қазақ әріптерімен), «Соңғы команда» (құрал аты, уақыты, «Сәтті» / «Қате»),
+  «Журнал», жиналған «Қосымша» бөлімі; сервер команда файлына құрал атын жазады.
+- Нұсқа нөмірі 0.1.0: package.json, CEP manifest, панельдегі жазу, плагин файлдары.
 
 ## [1.2.8] - 2026-09-02
 

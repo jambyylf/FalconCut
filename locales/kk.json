@@ -6,7 +6,7 @@
   "cli.unsupported_platform": "FalconCut орнатушысы тек macOS пен Windows-та жұмыс істейді.",
   "cli.error": "Қате: {0}",
 
-  "panel.status.connected": "Қосылды",
+  "panel.status.connected": "Қосылған",
   "panel.status.disconnected": "Ажыратылған",
   "panel.status.premiere_ready": "Premiere Pro: дайын",
   "panel.status.premiere_waiting": "Premiere Pro: күтілуде",

@@ -1,7 +1,7 @@
 {
   "id": "kz.onair.falconcut.uxp",
   "name": "FalconCut (UXP)",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "host": {
     "app": "premierepro",
     "minVersion": "24.4.0"

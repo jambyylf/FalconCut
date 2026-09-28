@@ -65,7 +65,8 @@ describe('locales/*.json', () => {
 describe('every translation key used in code exists', () => {
   const used = new Set<string>([
     ...collect(read('src/cli.ts'), /\bt\('([a-z0-9_.]+)'/g),
-    ...collect(read('cep-plugin/bridge-cep.js'), /\bt\('([a-z0-9_.]+[a-z0-9_])'/g),
+    // t('…') ғана емес, кез келген 'panel.…' / 'meta.…' жолы: t(ok ? 'panel.last.success' : …) да ілігеді
+    ...collect(read('cep-plugin/bridge-cep.js'), /'((?:panel|meta)\.[a-z0-9_.]*[a-z0-9_])'/g),
     ...collect(read('cep-plugin/index.html'), /data-i18n(?:-placeholder)?="([^"]+)"/g),
     // Кезектегі команда күйі кілті динамикалық құрылады: 'panel.queue.' + status
     'panel.queue.pending',
@@ -95,7 +96,10 @@ describe('CEP panel HTML', () => {
   it('ships the Kazakh text as the default, identical to kk.json', () => {
     const html = read('cep-plugin/index.html');
     const pairs = [...html.matchAll(/<[^>]*\sdata-i18n="([^"]+)"[^>]*>([^<]*)</g)];
-    expect(pairs.length).toBeGreaterThan(10);
+    // data-i18n белгісі бар әр элемент тексерілуі керек — біреуі де құр қалмасын
+    const translatedElements = (html.match(/\sdata-i18n="/g) ?? []).length;
+    expect(translatedElements).toBeGreaterThan(0);
+    expect(pairs.length).toBe(translatedElements);
     for (const [, key, text] of pairs) {
       expect({ key, text: (text ?? '').trim() }).toEqual({ key, text: kk[key as string] });
     }
