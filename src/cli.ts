@@ -3,23 +3,15 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { createTranslator, loadMessages, resolveLocale } from './i18n.js';
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const serverEntry = join(packageRoot, 'dist', 'index.js');
+// Қолданушы көретін барлық мәтін locales/ ішінде, әдепкі тіл — kk (FALCONCUT_LANG=en → ағылшынша)
+const t = createTranslator(loadMessages(join(packageRoot, 'locales'), resolveLocale()));
 
 function printHelp(): void {
-  console.log(`FalconCut
-
-Usage:
-  falconcut-mcp                 Start the MCP stdio server
-  falconcut-mcp --install-cep   Install the FalconCut CEP panel and configure supported MCP clients
-  falconcut-mcp --doctor        Check the local server, CEP panel, and client configuration
-  falconcut-mcp --version       Print the installed package version
-  falconcut-mcp --help          Show this help
-
-FalconCut sends no telemetry and makes no network requests.
-Tool search is on by default (search_tools + invoke_tool). Set FALCONCUT_TOOLSET=full to advertise every Premiere tool to the MCP host.
-`);
+  console.log(t('cli.help'));
 }
 
 function run(command: string, args: string[]): Promise<number> {
@@ -44,7 +36,7 @@ async function runPlatformScript(macScript: string, windowsScript: string, windo
       ...windowsArgs,
     ]);
   } else {
-    throw new Error('FalconCut setup is supported on macOS and Windows only.');
+    throw new Error(t('cli.unsupported_platform'));
   }
 
   if (code !== 0) process.exitCode = code;
@@ -79,13 +71,13 @@ async function main(): Promise<void> {
       printHelp();
       return;
     default:
-      console.error(`Unknown command: ${command}`);
+      console.error(t('cli.unknown_command', command));
       printHelp();
       process.exitCode = 1;
   }
 }
 
 main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error));
+  console.error(t('cli.error', error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;
 });

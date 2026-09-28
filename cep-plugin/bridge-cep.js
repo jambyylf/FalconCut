@@ -240,7 +240,8 @@
         return {};
     }
 
-    function readInstalledPackageVersion() {
+    // Панельдің өз папкасы (CEP extensions/FalconCut немесе репозиторийдегі cep-plugin)
+    function getExtensionDirs() {
         var dirs = [];
         try {
             if (typeof SystemPath !== 'undefined') {
@@ -249,6 +250,96 @@
             }
         } catch (eCs) {}
         if (typeof __dirname !== 'undefined') dirs.push(__dirname);
+        return dirs;
+    }
+
+    // ---- FalconCut: аударма (i18n) ----
+    // Панель мәтіндері locales/<тіл>.json файлдарынан алынады, әдепкі тіл — kk.
+    // Орнатушы locales/ папкасын панельдің қасына көшіреді; панель репозиторийден
+    // тікелей ашылса, ../locales қолданылады. Тілді таңдау реті: FALCONCUT_LANG,
+    // ~/.falconcut/config.json ішіндегі "language" (панельдегі «Тіл» тізімі), kk.
+    var SUPPORTED_LOCALES = ['kk', 'en'];
+    var DEFAULT_LOCALE = 'kk';
+    var LANG_ENV = 'FALCONCUT_LANG';
+    var i18nState = { locale: DEFAULT_LOCALE, messages: {}, fallback: {} };
+
+    function normalizeLocale(value) {
+        var locale = String(value || '').trim().toLowerCase();
+        return SUPPORTED_LOCALES.indexOf(locale) === -1 ? '' : locale;
+    }
+
+    function findLocalesDir() {
+        var dirs = getExtensionDirs();
+        for (var i = 0; i < dirs.length; i++) {
+            var candidates = [path.join(dirs[i], 'locales'), path.join(dirs[i], '..', 'locales')];
+            for (var j = 0; j < candidates.length; j++) {
+                try {
+                    if (fs.existsSync(path.join(candidates[j], 'en.json'))) return candidates[j];
+                } catch (e) {}
+            }
+        }
+        return '';
+    }
+
+    function readLocaleFile(dir, locale) {
+        try {
+            var raw = String(fs.readFileSync(path.join(dir, locale + '.json'), 'utf8')).replace(/^\uFEFF/, '');
+            var parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') return parsed;
+        } catch (e) {}
+        return {};
+    }
+
+    function resolveLocale() {
+        var fromEnv = (typeof process !== 'undefined' && process.env) ? process.env[LANG_ENV] : '';
+        return normalizeLocale(fromEnv) ||
+            normalizeLocale(readExistingPanelConfig().language) ||
+            DEFAULT_LOCALE;
+    }
+
+    function loadLocale(locale) {
+        var dir = findLocalesDir();
+        i18nState.locale = normalizeLocale(locale) || DEFAULT_LOCALE;
+        i18nState.fallback = dir ? readLocaleFile(dir, 'en') : {};
+        i18nState.messages = dir ? readLocaleFile(dir, i18nState.locale) : {};
+    }
+
+    function hasTranslation(key) {
+        return typeof i18nState.messages[key] === 'string' || typeof i18nState.fallback[key] === 'string';
+    }
+
+    // t('panel.log.processing', id) → «Команда өңделуде: <id>»; {0}, {1} ... толтырылады
+    function t(key) {
+        var template = typeof i18nState.messages[key] === 'string' ? i18nState.messages[key]
+            : (typeof i18nState.fallback[key] === 'string' ? i18nState.fallback[key] : key);
+        var args = Array.prototype.slice.call(arguments, 1);
+        return String(template).replace(/\{(\d+)\}/g, function(match, index) {
+            var value = args[Number(index)];
+            return value === undefined ? match : String(value);
+        });
+    }
+
+    // data-i18n белгісі бар элементтерге мәтін қояды. Аудармасы табылмаған элемент
+    // HTML-дегі әдепкі (қазақша) мәтінін сақтайды.
+    function applyTranslations() {
+        if (typeof document === 'undefined' || !document.querySelectorAll) return;
+        var textNodes = document.querySelectorAll('[data-i18n]');
+        for (var i = 0; i < textNodes.length; i++) {
+            var key = textNodes[i].getAttribute('data-i18n');
+            if (hasTranslation(key)) textNodes[i].textContent = t(key);
+        }
+        var placeholderNodes = document.querySelectorAll('[data-i18n-placeholder]');
+        for (var j = 0; j < placeholderNodes.length; j++) {
+            var placeholderKey = placeholderNodes[j].getAttribute('data-i18n-placeholder');
+            if (hasTranslation(placeholderKey)) placeholderNodes[j].setAttribute('placeholder', t(placeholderKey, getDefaultTempPath()));
+        }
+        if (document.documentElement) document.documentElement.setAttribute('lang', i18nState.locale);
+        var select = document.getElementById('languageSelect');
+        if (select) select.value = i18nState.locale;
+    }
+
+    function readInstalledPackageVersion() {
+        var dirs = getExtensionDirs();
         for (var i = 0; i < dirs.length; i++) {
             try {
                 var versionPath = path.join(dirs[i], 'mcp-version.json');
@@ -268,7 +359,7 @@
             fs.mkdirSync(resolvedPath, { recursive: true });
         }
         if (!fs.statSync(resolvedPath).isDirectory()) {
-            throw new Error('Temp path is not a directory: ' + resolvedPath);
+            throw new Error(t('panel.log.not_a_directory', resolvedPath));
         }
         return resolvedPath;
     }
@@ -327,19 +418,26 @@
     };
 
     MCPPremiereBridge.prototype.init = function() {
-        this.log('Initializing FalconCut...', 'info');
+        loadLocale(resolveLocale());
+        applyTranslations();
+        var versionEl = document.getElementById('panelVersion');
+        var version = readInstalledPackageVersion();
+        if (versionEl && version) versionEl.textContent = '· v' + version;
+        this.log(t('panel.log.loaded'), 'info');
+        this.log(t('panel.log.initializing'), 'info');
 
         // Check host environment
         try {
             var env = this.normalizeHostEnvironment(this.csInterface.getHostEnvironment());
             if (env) {
-                this.log('Premiere Pro version: ' + env.appVersion + ' (build ' + env.appId + ')', 'info');
+                this.log(t('panel.log.premiere_version', env.appVersion, env.appId), 'info');
             }
         } catch (e) {
-            this.log('Warning: Could not get host environment: ' + e.message, 'warning');
+            this.log(t('panel.log.host_env_warning', e.message), 'warning');
         }
 
         this.loadConfig();
+        this.log(t('panel.log.path_hint', this.getTempDirectory() || getDefaultTempPath()), 'info');
         this.updateUI();
         this.startCommandPolling();
         this.startBridge();
@@ -351,7 +449,7 @@
             this.tempDirectory = ensureDirectory(targetPath);
             return this.tempDirectory;
         } catch (e) {
-            this.log('Error creating temp directory: ' + e.message, 'error');
+            this.log(t('panel.log.temp_dir_error', e.message), 'error');
             return null;
         }
     };
@@ -369,7 +467,7 @@
             fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
             return reportPath;
         } catch (e) {
-            this.log('Failed to write diagnostics report: ' + e.message, 'error');
+            this.log(t('panel.log.diagnostics_write_error', e.message), 'error');
             return null;
         }
     };
@@ -386,7 +484,7 @@
                 }
             }
         } catch (e) {
-            this.log('Error watching directory: ' + e.message, 'error');
+            this.log(t('panel.log.watch_error', e.message), 'error');
         }
     };
 
@@ -404,7 +502,7 @@
         try {
             var fileContent = fs.readFileSync(filePath, 'utf8');
             var command = JSON.parse(fileContent);
-            this.log('Processing command: ' + command.id, 'info');
+            this.log(t('panel.log.processing', command.id), 'info');
             this.addToQueue(command);
             this.isProcessing = true;
             this.executeCommand(command, function(result) {
@@ -420,7 +518,7 @@
                     // was just published, turning a completed command into an error.
                     try { fs.unlinkSync(filePath); } catch (eUnlink) {}
 
-                    self.log('Command completed: ' + command.id, 'info');
+                    self.log(t('panel.log.completed', command.id), 'info');
                     self.updateCommandStatus(command.id, 'completed');
                 } catch (e) {
                     if (!responsePublished) {
@@ -436,7 +534,7 @@
                 // callback is asynchronous.
             });
         } catch (e) {
-            this.log('Error processing command file: ' + e.message, 'error');
+            this.log(t('panel.log.command_file_error', e.message), 'error');
             try {
                 var responseFile = filePath.replace('command-', 'response-');
                 this.writeResponseAtomic(responseFile, { error: e.message, timestamp: new Date().toISOString() });
@@ -550,7 +648,7 @@
                 // mixed-context Node I/O cannot block PlugPlug's handshake.
                 setTimeout(function() {
                     if (!waiterSettled) {
-                        self.log('EvalScript result: ' + result, 'info');
+                        self.log(t('panel.log.eval_result', result), 'info');
 
                         if (result === 'EvalScript error.' || result === 'EvalScript error') {
                             notifyWaiter(new Error(
@@ -634,11 +732,11 @@
         var el = document.getElementById('commandQueue');
         if (!el) return;
         if (this.commandQueue.length === 0) {
-            el.innerHTML = '<div class="command-item"><span class="command-label">No commands in queue</span></div>';
+            el.innerHTML = '<div class="command-item"><span class="command-label">' + escapeHtml(t('panel.queue.empty')) + '</span></div>';
             return;
         }
         var html = this.commandQueue.slice(-5).map(function(cmd) {
-            return '<div class="command-item"><span class="command-label">' + cmd.script + '</span><span class="command-status ' + cmd.status + '">' + cmd.status + '</span></div>';
+            return '<div class="command-item"><span class="command-label">' + escapeHtml(cmd.script) + '</span><span class="command-status ' + cmd.status + '">' + escapeHtml(t('panel.queue.' + cmd.status)) + '</span></div>';
         }).join('');
         el.innerHTML = html;
     };
@@ -691,17 +789,46 @@
             if (tempDir) this.tempDirectory = tempDir;
             var ensuredTempDir = this.getTempDirectory();
             if (!ensuredTempDir) {
-                throw new Error('Could not create or access temp directory');
+                throw new Error(t('panel.log.temp_dir_unavailable'));
             }
             if (tempEl) tempEl.value = this.tempDirectory;
             fs.writeFileSync(path.join(ensuredTempDir, 'config.json'), JSON.stringify({ tempDirectory: this.tempDirectory }, null, 2));
             var panelConfig = readExistingPanelConfig();
             panelConfig.tempDirectory = this.tempDirectory;
             fs.writeFileSync(getPanelConfigPath(), JSON.stringify(panelConfig, null, 2));
-            this.log('Configuration saved', 'info');
+            this.log(t('panel.log.config_saved'), 'info');
         } catch (e) {
-            this.log('Error saving config: ' + e.message, 'error');
+            this.log(t('panel.log.config_error', e.message), 'error');
         }
+    };
+
+    // Панельдегі «Тіл» тізімі: таңдауды ~/.falconcut/config.json-ға жазады (CLI мен
+    // installer да осыны оқиды) және бүкіл интерфейсті бірден аударады.
+    MCPPremiereBridge.prototype.changeLanguage = function(locale) {
+        var normalized = normalizeLocale(locale) || DEFAULT_LOCALE;
+        try {
+            var panelConfig = readExistingPanelConfig();
+            panelConfig.language = normalized;
+            fs.writeFileSync(getPanelConfigPath(), JSON.stringify(panelConfig, null, 2));
+        } catch (e) {
+            this.log(t('panel.log.config_error', e.message), 'error');
+        }
+        this.setLocale(normalized);
+        this.updateUI();
+        if (typeof this.premiereReady === 'boolean') this.updateServerStatus(this.premiereReady);
+        this.updateCommandQueueUI();
+        this.log(t('panel.log.language_changed', t('meta.language_name')), 'info');
+    };
+
+    // Тілді жүктеп, интерфейске қолданады (баптауға жазбайды)
+    MCPPremiereBridge.prototype.setLocale = function(locale) {
+        loadLocale(locale);
+        applyTranslations();
+        return i18nState.locale;
+    };
+
+    MCPPremiereBridge.prototype.t = function() {
+        return t.apply(null, arguments);
     };
 
     MCPPremiereBridge.prototype.startBridge = function() {
@@ -710,7 +837,7 @@
             this.updateServerStatus(true);
             return;
         }
-        this.log('Starting MCP Bridge...', 'info');
+        this.log(t('panel.log.starting'), 'info');
         this.isProcessing = false;
         this.isConnected = true;
         this.updateUI();
@@ -721,13 +848,13 @@
             this.updateServerStatus(false);
             return;
         }
-        this.log('Watching: ' + tempPath + ' (must match FALCONCUT_BRIDGE_DIR in your MCP client)', 'info');
+        this.log(t('panel.log.watching', tempPath), 'info');
         this.updateServerStatus(true);
-        this.log('Bridge ready. Connect from Codex, Claude, or another MCP client using this same temp directory.', 'info');
+        this.log(t('panel.log.ready'), 'info');
     };
 
     MCPPremiereBridge.prototype.stopBridge = function() {
-        this.log('Stopping MCP Bridge...', 'info');
+        this.log(t('panel.log.stopping'), 'info');
         this.isConnected = false;
         this.isProcessing = false;
         this.updateUI();
@@ -756,12 +883,12 @@
         function finalize() {
             var reportPath = self.writeDiagnosticReport(report);
             if (reportPath) {
-                self.log('Diagnostics report saved to ' + reportPath, 'info');
+                self.log(t('panel.log.diagnostics_saved', reportPath), 'info');
             }
-            self.log('Diagnostics summary: ' + JSON.stringify(report), 'info');
+            self.log(t('panel.log.diagnostics_summary', JSON.stringify(report)), 'info');
         }
 
-        this.log('Running CEP diagnostics...', 'info');
+        this.log(t('panel.log.diagnostics_running'), 'info');
 
         try {
             hostEnvironment = this.normalizeHostEnvironment(this.csInterface.getHostEnvironment());
@@ -844,10 +971,10 @@
         })();';
         this.executeExtendScript(script, function(err, result) {
             if (err) {
-                self.log('Premiere Pro connection failed: ' + err.message, 'error');
+                self.log(t('panel.log.connection_failed', err.message), 'error');
                 self.updateServerStatus(false);
             } else {
-                self.log('Premiere Pro connection OK: ' + JSON.stringify(result), 'info');
+                self.log(t('panel.log.connection_ok', JSON.stringify(result)), 'info');
                 self.updateServerStatus(true);
             }
         });
@@ -859,10 +986,10 @@
         if (connectionStatus && connectionText) {
             if (this.isConnected) {
                 connectionStatus.className = 'status-dot connected';
-                connectionText.textContent = 'Connected';
+                connectionText.textContent = t('panel.status.connected');
             } else {
                 connectionStatus.className = 'status-dot disconnected';
-                connectionText.textContent = 'Disconnected';
+                connectionText.textContent = t('panel.status.disconnected');
             }
         }
         var startBtn = document.getElementById('startButton');
@@ -874,15 +1001,16 @@
     };
 
     MCPPremiereBridge.prototype.updateServerStatus = function(isRunning) {
+        this.premiereReady = !!isRunning;
         var serverStatus = document.getElementById('serverStatus');
         var serverText = document.getElementById('serverText');
         if (serverStatus && serverText) {
             if (isRunning) {
                 serverStatus.className = 'status-dot connected';
-                serverText.textContent = 'Premiere Pro: Ready';
+                serverText.textContent = t('panel.status.premiere_ready');
             } else {
                 serverStatus.className = 'status-dot disconnected';
-                serverText.textContent = 'Premiere Pro: Waiting';
+                serverText.textContent = t('panel.status.premiere_waiting');
             }
         }
     };
@@ -902,8 +1030,12 @@
 
     MCPPremiereBridge.prototype.clearLog = function() {
         var logContainer = document.getElementById('logContainer');
-        if (logContainer) logContainer.innerHTML = '<div class="log-entry info">Log cleared</div>';
+        if (logContainer) logContainer.innerHTML = '<div class="log-entry info">' + escapeHtml(t('panel.log.cleared')) + '</div>';
     };
+
+    function escapeHtml(text) {
+        return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
 
     window.MCPPremiereBridge = MCPPremiereBridge;
     window.bridge = null;
@@ -912,6 +1044,7 @@
     window.runDiagnostics = function() { if (window.bridge) window.bridge.runDiagnostics(); };
     window.saveConfig = function() { if (window.bridge) window.bridge.saveConfig(); };
     window.clearLog = function() { if (window.bridge) window.bridge.clearLog(); };
+    window.changeLanguage = function(locale) { if (window.bridge) window.bridge.changeLanguage(locale); };
     document.addEventListener('DOMContentLoaded', function() {
         window.bridge = new MCPPremiereBridge();
     });

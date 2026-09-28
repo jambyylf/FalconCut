@@ -54,6 +54,7 @@ import { spawn, spawnSync } from 'node:child_process';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const bridgeSource = join(root, 'cep-plugin');
+const localesSource = join(root, 'locales');
 // CEP панелі де дәл осы жолды қолданады: macOS-та /tmp, Windows-та %TEMP%
 const tempDirectory = process.env.FALCONCUT_BRIDGE_DIR || join(process.platform === 'win32' ? tmpdir() : '/tmp', 'falconcut-bridge');
 
@@ -75,6 +76,8 @@ function installCepBridge() {
 
   if (!existsSync(bridgeSource)) throw new Error('The bundled FalconCut CEP panel is missing. Reinstall the MCP bundle.');
   cpSync(bridgeSource, target, { recursive: true, force: true });
+  // Панель мәтіндерін өз қасындағы locales/ папкасынан оқиды
+  if (existsSync(localesSource)) cpSync(localesSource, join(target, 'locales'), { recursive: true, force: true });
   mkdirSync(tempDirectory, { recursive: true });
 }
 
@@ -100,6 +103,7 @@ await rm(stagingDirectory, { recursive: true, force: true });
 await mkdir(serverDirectory, { recursive: true });
 await cp(join(root, 'dist'), join(serverDirectory, 'dist'), { recursive: true });
 await cp(join(root, 'cep-plugin'), join(serverDirectory, 'cep-plugin'), { recursive: true });
+await cp(join(root, 'locales'), join(serverDirectory, 'locales'), { recursive: true });
 await cp(join(root, 'package.json'), join(serverDirectory, 'package.json'));
 await cp(join(root, 'package-lock.json'), join(serverDirectory, 'package-lock.json'));
 await writeFile(join(serverDirectory, 'launcher.js'), launcher);

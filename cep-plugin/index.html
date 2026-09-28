@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="kk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -263,6 +263,26 @@
             box-shadow: 0 0 0 3px rgba(95, 211, 255, 0.1);
         }
 
+        /* FalconCut: тіл таңдау тізімі мәтін өрісімен бірдей көрінеді */
+        select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid rgba(129, 170, 197, 0.14);
+            border-radius: 12px;
+            background: var(--input);
+            color: var(--text-0);
+            font-size: 13px;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: rgba(95, 211, 255, 0.48);
+        }
+
+        label.field-gap {
+            margin-top: 14px;
+        }
+
         .button-row,
         .button-grid {
             display: grid;
@@ -428,47 +448,50 @@
     </style>
 </head>
 <body>
+    <!--
+        FalconCut: data-i18n белгісі бар элементтердің мәтіні locales/<тіл>.json-нан алынады
+        (bridge-cep.js → applyTranslations). Мұндағы қазақша мәтін — аударма файлы
+        табылмаған жағдайға арналған әдепкі нұсқа, ол kk.json-мен бірдей болуы керек.
+    -->
     <div class="shell">
         <section class="hero">
-            <div class="eyebrow">Premiere Automation</div>
+            <div class="eyebrow" data-i18n="panel.eyebrow">Premiere автоматтандыру</div>
             <h1>FalconCut</h1>
-            <div class="hero-copy">
-                Real-time file bridge for Codex and other MCP clients. Keep the temp path aligned, start the bridge, and the panel will execute commands inside Premiere Pro.
-            </div>
+            <div class="hero-copy" data-i18n="panel.hero">Premiere Pro мен Claude, Codex немесе басқа MCP клиенті арасындағы нақты уақыттағы файл көпірі. Панель ашылғанда көпір өзі қосылады, содан кейін панель командаларды Premiere Pro ішінде орындайды.</div>
             <div class="hero-meta">
                 <div class="meta-card">
-                    <span class="meta-label">Mode</span>
-                    <span class="meta-value">CEP Runtime</span>
+                    <span class="meta-label" data-i18n="panel.meta.mode">Режим</span>
+                    <span class="meta-value" data-i18n="panel.meta.mode_value">CEP ортасы</span>
                 </div>
                 <div class="meta-card">
-                    <span class="meta-label">Path</span>
-                    <span class="meta-value">/tmp bridge</span>
+                    <span class="meta-label" data-i18n="panel.meta.path">Жол</span>
+                    <span class="meta-value" data-i18n="panel.meta.path_value">Жергілікті папка</span>
                 </div>
                 <div class="meta-card">
-                    <span class="meta-label">Control</span>
-                    <span class="meta-value">Live Queue</span>
+                    <span class="meta-label" data-i18n="panel.meta.control">Басқару</span>
+                    <span class="meta-value" data-i18n="panel.meta.control_value">Тікелей кезек</span>
                 </div>
             </div>
         </section>
 
         <section class="panel">
             <div class="panel-title">
-                <h2>Status</h2>
-                <span>Live bridge + host checks</span>
+                <h2 data-i18n="panel.status.title">Күй</h2>
+                <span data-i18n="panel.status.subtitle">Көпір мен Premiere тексерісі</span>
             </div>
             <div class="status-grid">
                 <div class="status-card">
-                    <div class="status-caption">Bridge</div>
+                    <div class="status-caption" data-i18n="panel.status.bridge">Көпір</div>
                     <div class="status-indicator">
                         <div class="status-dot disconnected" id="connectionStatus"></div>
-                        <span class="status-text" id="connectionText">Disconnected</span>
+                        <span class="status-text" id="connectionText" data-i18n="panel.status.disconnected">Ажыратылған</span>
                     </div>
                 </div>
                 <div class="status-card">
-                    <div class="status-caption">Premiere</div>
+                    <div class="status-caption" data-i18n="panel.status.premiere">Premiere</div>
                     <div class="status-indicator">
                         <div class="status-dot disconnected" id="serverStatus"></div>
-                        <span class="status-text" id="serverText">Waiting for Premiere</span>
+                        <span class="status-text" id="serverText" data-i18n="panel.status.waiting_premiere">Premiere күтілуде</span>
                     </div>
                 </div>
             </div>
@@ -476,59 +499,57 @@
 
         <section class="panel">
             <div class="panel-title">
-                <h2>Configuration</h2>
-                <span>Shared temp directory</span>
+                <h2 data-i18n="panel.config.title">Баптаулар</h2>
+                <span data-i18n="panel.config.subtitle">Ортақ көпір папкасы</span>
             </div>
-            <div class="config-copy">
-                This must match the `FALCONCUT_BRIDGE_DIR` value used by your MCP client.
-            </div>
-            <label for="tempDirectory">Temp Directory</label>
-            <input type="text" id="tempDirectory" placeholder="Temp Directory (e.g. /tmp/falconcut-bridge)">
+            <div class="config-copy" data-i18n="panel.config.help">Бұл жол MCP клиентіңіздегі FALCONCUT_BRIDGE_DIR мәнімен бірдей болуы керек. Оны сол жақта өзгертпеген болсаңыз, әдепкі мәнді қалдырыңыз.</div>
+            <label for="tempDirectory" data-i18n="panel.config.temp_label">Көпір папкасы</label>
+            <input type="text" id="tempDirectory" data-i18n-placeholder="panel.config.temp_placeholder" placeholder="Көпір папкасы">
+            <label for="languageSelect" class="field-gap" data-i18n="panel.config.language_label">Тіл</label>
+            <select id="languageSelect" onchange="changeLanguage(this.value)">
+                <option value="kk">Қазақша</option>
+                <option value="en">English</option>
+            </select>
             <div class="button-row">
-                <button class="primary" onclick="saveConfig()">Save Configuration</button>
+                <button class="primary" onclick="saveConfig()" data-i18n="panel.config.save">Баптауларды сақтау</button>
             </div>
         </section>
 
         <section class="panel">
             <div class="panel-title">
-                <h2>Controls</h2>
-                <span>Start, stop, inspect</span>
+                <h2 data-i18n="panel.controls.title">Басқару</h2>
+                <span data-i18n="panel.controls.subtitle">Қосу, тоқтату, тексеру</span>
             </div>
             <div class="button-grid">
-                <button class="primary" onclick="startBridge()" id="startButton">Start Bridge</button>
-                <button class="secondary" onclick="stopBridge()" id="stopButton" disabled>Stop Bridge</button>
-                <button class="secondary" onclick="runDiagnostics()" id="diagnosticsButton">Run Diagnostics</button>
-                <button class="utility" onclick="clearLog()" id="clearButton">Clear Log</button>
+                <button class="primary" onclick="startBridge()" id="startButton" data-i18n="panel.controls.start">Көпірді қосу</button>
+                <button class="secondary" onclick="stopBridge()" id="stopButton" disabled data-i18n="panel.controls.stop">Көпірді тоқтату</button>
+                <button class="secondary" onclick="runDiagnostics()" id="diagnosticsButton" data-i18n="panel.controls.diagnostics">Диагностика</button>
+                <button class="utility" onclick="clearLog()" id="clearButton" data-i18n="panel.controls.clear_log">Журналды тазалау</button>
             </div>
-            <div class="micro-copy" style="margin-top: 10px; margin-bottom: 0;">
-                Reload the panel after updating bridge code so Premiere is not running stale JavaScript in memory. The bridge starts automatically when this panel loads. Stop Bridge still works if you need to pause it. Connect from Codex, Claude, or another MCP client using the same temp directory.
-            </div>
+            <div class="micro-copy" style="margin-top: 10px; margin-bottom: 0;" data-i18n="panel.controls.help">Панель ашылғанда көпір автоматты түрде қосылады, «Көпірді тоқтату» оны уақытша тоқтатады. FalconCut жаңартылғаннан кейін Premiere ескі кодты орындамауы үшін панельді тінтуірдің оң жақ батырмасымен басып, Reload таңдаңыз.</div>
         </section>
 
         <section class="panel">
             <div class="panel-title">
-                <h2>Command Queue</h2>
-                <span>Most recent tasks</span>
+                <h2 data-i18n="panel.queue.title">Командалар кезегі</h2>
+                <span data-i18n="panel.queue.subtitle">Соңғы тапсырмалар</span>
             </div>
             <div class="command-queue" id="commandQueue">
                 <div class="command-item">
-                    <span class="command-label">No commands in queue</span>
+                    <span class="command-label" data-i18n="panel.queue.empty">Кезекте команда жоқ</span>
                 </div>
             </div>
         </section>
 
         <section class="panel">
             <div class="panel-title">
-                <h2>Activity Log</h2>
-                <span>Recent messages</span>
+                <h2 data-i18n="panel.log.title">Әрекеттер журналы</h2>
+                <span data-i18n="panel.log.subtitle">Соңғы хабарламалар</span>
             </div>
-            <div class="log-container" id="logContainer">
-                <div class="log-entry info">FalconCut loaded. The bridge starts automatically when this panel opens.</div>
-                <div class="log-entry info">Set the temp directory to match your MCP client if it is not already /tmp/falconcut-bridge.</div>
-            </div>
+            <div class="log-container" id="logContainer"></div>
         </section>
 
-        <div class="footer-note">FalconCut CEP Panel</div>
+        <div class="footer-note"><span data-i18n="panel.footer">FalconCut · CEP панелі</span> <span id="panelVersion"></span></div>
     </div>
 
     <script src="CSInterface.js"></script>
