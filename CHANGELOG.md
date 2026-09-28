@@ -4,6 +4,24 @@ All notable changes are documented here. Releases use semantic versioning.
 
 ## [Unreleased]
 
+### FalconCut (jambyylf/FalconCut форкы)
+
+- Ребрендинг: npm пакеті және CLI `falconcut-mcp`, MCP сервері `falconcut`,
+  CEP bundle ID `kz.onair.falconcut`, мәзір `Window > Extensions > FalconCut`,
+  көпір папкасы `/tmp/falconcut-bridge`, баптаулар `~/.falconcut/`,
+  орта айнымалылары `FALCONCUT_BRIDGE_DIR`, `FALCONCUT_TOOLSET`, `FALCONCUT_LANG`.
+- Телеметрия мен npm жаңарту тексерісі толық алынды — FalconCut желіге сұраныс жібермейді.
+- Қазақшалау: `locales/kk.json` (әдепкі) және `locales/en.json`; CEP панелі, CLI,
+  macOS/Windows орнатушысы мен `--doctor` осы файлдардан оқиды. Панельде «Тіл» тізімі бар.
+- `--doctor` енді `falconcut-mcp` командасының PATH-та барын және панельдің
+  Premiere-де қазір жұмыс істеп тұрғанын да тексереді.
+- Windows doctor: Adobe орнатылған, бірақ debug режимі әлі қосылмаған компьютерде
+  StrictMode қатесімен құлайтын ақау түзетілді.
+- Сервер `FALCONCUT_BRIDGE_DIR` берілмесе де панельмен ортақ әдепкі папканы қолданады.
+- Агент ережелері (skill + сервер нұсқауы): қолданушымен қазақша сөйлесу және
+  ә ғ қ ң ө ұ ү һ і әріптерін қайта оқып тексеру.
+- README (қазақша), README.en.md, QUICKSTART қайта жазылды; басқа тілдердегі README өшірілді.
+
 ## [1.2.8] - 2026-09-02
 
 - `move_clip_to_track` parks past the last clip on the destination, restores

@@ -1,126 +1,106 @@
-# Quick Start
+# Жылдам бастау
 
-This is the shortest path to a working install.
+Жұмыс істейтін орнатудың ең қысқа жолы. Толық сипаттама — [README.md](README.md).
 
-## Claude Desktop (macOS)
+## macOS (Claude Desktop / Claude Code)
 
 ```bash
-git clone https://github.com/hetpatel-11/Adobe_Premiere_Pro_MCP.git
-cd Adobe_Premiere_Pro_MCP
+git clone https://github.com/jambyylf/FalconCut.git
+cd FalconCut
 npm run setup:mac
+npm link
+falconcut-mcp --doctor
 ```
 
-Then do this once inside Premiere Pro:
+Содан кейін Premiere Pro ішінде бір рет:
 
-1. Open `Premiere Pro > Preferences > Plugins` and enable **UXP Plugins > Enable developer mode**.
-2. Restart Premiere Pro if the setting was changed.
-3. Open `Window > Extensions > MCP Bridge (CEP)`.
-4. Set `Temp Directory` to `/tmp/premiere-mcp-bridge`.
-5. Click `Save Configuration`.
-6. Click `Start Bridge`.
-7. Click `Test Connection`.
-8. If it fails, click `Run Diagnostics` and send back `/tmp/premiere-mcp-bridge/premiere-mcp-diagnostics-latest.json`.
+1. Premiere Pro-ны қайта іске қосыңыз.
+2. **Window > Extensions > FalconCut** мәзірін ашыңыз. Көпір өзі қосылады.
+3. «Көпір папкасы» өрісінде `/tmp/falconcut-bridge` тұрғанын тексеріңіз.
+4. Панель көрінбесе: **Premiere Pro > Settings > Plugins** ішінде **Enable developer mode** белгісін қосып, Premiere-ді қайта іске қосыңыз.
 
-Visual reference:
+   ![Premiere Pro-да developer mode қосу](images/uxp-developer-mode.png)
 
-![Enable UXP developer mode in Premiere Pro](images/uxp-developer-mode.png)
+5. Ақау болса, панельдегі **Диагностика** батырмасын басыңыз — есеп `/tmp/falconcut-bridge/falconcut-diagnostics-latest.json` файлына жазылады.
 
-Then restart Claude Desktop and ask:
+Содан кейін Claude-ты қайта іске қосып, сұраңыз:
 
 ```text
-What's my current Premiere Pro project info?
+verify_premiere_connection құралын іске қос. Жобаға ешқандай өзгеріс енгізбе.
 ```
 
-For better editing behavior, attach `premiere://config/get_instructions` before asking the model to change a project.
-
-## GitHub Copilot / Claude Desktop (Windows)
+## Windows (Claude Code / Claude Desktop / GitHub Copilot)
 
 ```powershell
-git clone https://github.com/hetpatel-11/Adobe_Premiere_Pro_MCP.git
-cd Adobe_Premiere_Pro_MCP
+git clone https://github.com/jambyylf/FalconCut.git
+cd FalconCut
 npm run setup:win
+npm link
+falconcut-mcp --doctor
 ```
 
-Then do this once inside Premiere Pro:
+Содан кейін Premiere Pro ішінде бір рет:
 
-1. Open `Window > Extensions > MCP Bridge (CEP)`.
-2. Set `Temp Directory` to `%TEMP%\premiere-mcp-bridge`.
-3. Click `Save Configuration`.
-4. Click `Start Bridge`.
-5. Click `Test Connection`.
+1. Premiere Pro-ны қайта іске қосыңыз.
+2. **Window > Extensions > FalconCut** мәзірін ашыңыз.
+3. «Көпір папкасы» өрісінде `%TEMP%\falconcut-bridge` жолы (мысалы, `C:\Users\<атыңыз>\AppData\Local\Temp\falconcut-bridge`) тұрғанын тексеріңіз.
 
-Then restart VS Code and/or Claude Desktop. The Windows installer writes MCP config for GitHub Copilot in VS Code and Claude Desktop.
+Windows орнатушысы VS Code (GitHub Copilot) мен Claude Desktop баптауларына `falconcut` жазбасын қосады. Оларды қоспау үшін: `npm run setup:win -- -SkipCopilotConfig -SkipClaudeDesktopConfig`.
 
-## Codex / Claude Code
+## Claude Code
 
-Build the server:
+Репозиторий түбіндегі `.mcp.json` серверді `falconcut-mcp` командасымен қосады. Claude Code-ты осы папкада ашып, `falconcut` серверін қосуға рұқсат беріңіз, содан кейін `/mcp` арқылы тексеріңіз.
+
+Кез келген папкадан қолдану үшін:
 
 ```bash
-npm install
-npm run build
+claude mcp add falconcut --scope user -- falconcut-mcp
 ```
 
-Add the MCP entry on one line:
+Windows-та `falconcut` қосылмаса: `claude mcp add falconcut --scope user -- cmd /c falconcut-mcp`.
+
+## Codex
 
 ```bash
-codex mcp add premiere_pro --env PREMIERE_TEMP_DIR=/tmp/premiere-mcp-bridge -- node /absolute/path/to/Adobe_Premiere_Pro_MCP/dist/index.js
+codex mcp add falconcut -- falconcut-mcp
 ```
 
-Then:
-
-1. Restart the client.
-2. Open the Premiere CEP panel.
-3. Confirm the temp directory is `/tmp/premiere-mcp-bridge`.
-4. Click `Start Bridge`.
-
-## Sanity Checks
-
-Run:
+## Тексерістер
 
 ```bash
-npm run setup:doctor
+falconcut-mcp --doctor
 ```
 
-On Windows, run:
+`--doctor` Node.js-ті, сервер жинағын, FalconCut панелін, көпір папкасын, Adobe CEP debug режимін, MCP клиент баптауларын және панельдің қазір Premiere-де жұмыс істеп тұрғанын тексереді. Ағылшынша нәтиже үшін: `FALCONCUT_LANG=en falconcut-mcp --doctor`.
 
-```powershell
-npm run setup:doctor:win
-```
-
-For a real end-to-end verification, use a scratch project and run:
+Нақты Premiere-мен толық тексеріс үшін (жаңа, бос жобада):
 
 ```bash
 node scripts/live-tool-sweep.mjs
 ```
 
-That sweep creates disposable `Sweep ...` sequences so the live bridge is actually exercised.
+Бұл скрипт жобада `Sweep ...` деген уақытша секвенциялар жасайды.
 
-## Common Failure Cases
+## Жиі кездесетін ақаулар
 
-### The client sees the MCP server but tool calls fail
+### AI клиенті серверді көреді, бірақ құралдар жұмыс істемейді
 
-- Premiere is not open
-- no project is open
-- the CEP panel is not started
-- the temp directory in the panel is not `/tmp/premiere-mcp-bridge`
-- the panel needs a right-click `Reload` after bridge updates
-- diagnostics are available from the CEP panel via `Run Diagnostics`
+- Premiere ашылмаған
+- жоба ашылмаған
+- FalconCut панелі ашылмаған немесе көпір тоқтатылған
+- панельдегі көпір папкасы MCP клиентіндегі жолмен сәйкес емес
+- FalconCut жаңартылғаннан кейін панельді **Reload** жасау керек
 
-### `codex mcp add` fails
+### Claude Code-та `falconcut` қосылмайды
 
-- the command was split across lines
-- the path to `dist/index.js` is wrong
-- the client was not restarted after config changes
+- `npm link` орындалмаған (`falconcut-mcp --version` тексеріңіз)
+- Windows-та `cmd /c` нұсқасын қолданыңыз (жоғарыдан қараңыз)
+- баптауды өзгерткеннен кейін Claude Code қайта іске қосылмаған
 
-### `setup:doctor` fails
+### `--doctor` ақау көрсетеді
 
-- the CEP extension is not installed
-- `dist/index.js` was not built
-- Adobe CEP debug mode is disabled
-- the Claude Desktop config entry points to the wrong path
+- FalconCut панелі орнатылмаған → `falconcut-mcp --install-cep`
+- `dist/index.js` жоқ → `npm run build`
+- Adobe CEP debug режимі өшірулі → орнатушыны қайта іске қосыңыз
 
-For the full release notes and current limits, see `README.md` and `KNOWN_ISSUES.md`.
-
-## Telemetry
-
-Anonymous usage telemetry is on by default. It does not include project names, paths, or tool arguments. Uncheck **Share anonymous usage data** in the CEP panel, or set `PREMIERE_MCP_TELEMETRY=0`. See `PRIVACY.md`.
+Телеметрия жоқ: FalconCut желіге ешқандай сұраныс жібермейді ([PRIVACY.md](PRIVACY.md)).

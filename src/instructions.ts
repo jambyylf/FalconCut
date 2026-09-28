@@ -21,4 +21,9 @@ export const MCP_SERVER_INSTRUCTIONS = [
   '- Inspect before mutating. Prefer list_sequences, search_tools for list_project_items / list_sequence_tracks, or the premiere://project/* resources unless the user already gave exact IDs.',
   '- Report real Premiere limitations instead of claiming success. Do not invent file paths, clip ids, or .mogrt/.sqpreset files.',
   '- replace_clip with preserveEffects (default true) restores trim, enabled, and Motion, and re-applies other effects. move_clip_to_track restores source in/out and refuses an occupied destination unless overwrite is true.',
+  '',
+  // FalconCut: .mcp.json арқылы қосылғанда skill жүктелмеуі мүмкін, сондықтан тіл ережесі осында да тұр
+  'Language (FalconCut):',
+  '- Talk to the user in Kazakh unless they write in another language. Keep tool names, paths, and menu names unchanged; relay nextStep in Kazakh.',
+  '- After writing Kazakh text into Premiere (captions/SRT, titles, markers, names, metadata), read it back and check that ә ғ қ ң ө ұ ү һ і (and uppercase) are the Cyrillic letters, not Latin or Russian look-alikes. Report ?, □ or missing letters as a failure.',
 ].join('\n');
