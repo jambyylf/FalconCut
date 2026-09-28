@@ -30,7 +30,7 @@ jest.mock('node:crypto', () => ({
 
 describe('script serialization', () => {
   const mockFs = fs as jest.Mocked<typeof fs>;
-  const configuredTempDir = '/tmp/premiere-mcp-bridge-test';
+  const configuredTempDir = '/tmp/falconcut-bridge-test';
   const commandPath = path.join(configuredTempDir, 'command-test-uuid-1234.json');
   // Written here first, then renamed to commandPath so the panel cannot read a
   // half-written command while polling.
@@ -42,11 +42,11 @@ describe('script serialization', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.PREMIERE_TEMP_DIR = configuredTempDir;
+    process.env.FALCONCUT_BRIDGE_DIR = configuredTempDir;
   });
 
   afterEach(() => {
-    delete process.env.PREMIERE_TEMP_DIR;
+    delete process.env.FALCONCUT_BRIDGE_DIR;
   });
 
   const readyBridge = async (): Promise<PremiereProBridge> => {

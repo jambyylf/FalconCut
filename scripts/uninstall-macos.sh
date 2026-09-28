@@ -7,9 +7,9 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
-CEP_TARGET_DIR="$HOME/Library/Application Support/Adobe/CEP/extensions/MCPBridgeCEP"
+CEP_TARGET_DIR="$HOME/Library/Application Support/Adobe/CEP/extensions/FalconCut"
 CLAUDE_CONFIG_PATH="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-TEMP_DIR="/tmp/premiere-mcp-bridge"
+TEMP_DIR="/tmp/falconcut-bridge"
 
 echo "Removing Premiere CEP extension..."
 rm -rf "$CEP_TARGET_DIR"
@@ -36,7 +36,7 @@ if (raw) {
 }
 
 if (data && typeof data === "object" && !Array.isArray(data) && data.mcpServers && typeof data.mcpServers === "object" && !Array.isArray(data.mcpServers)) {
-  delete data.mcpServers["premiere-pro"];
+  delete data.mcpServers["falconcut"];
 }
 
 fs.writeFileSync(configPath, `${JSON.stringify(data, null, 2)}\n`);

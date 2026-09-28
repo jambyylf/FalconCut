@@ -76,17 +76,3 @@ export function validateFilePath(filePath: string, allowedDirs?: string[]): { va
     return { valid: false, error: `Path validation error: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
-
-/**
- * Creates a safe temp directory with proper permissions
- */
-export function createSecureTempDir(sessionId: string): string {
-  const tempBase = process.platform === 'win32'
-    ? process.env.TEMP || 'C:\\Temp'
-    : '/tmp';
-
-  // Use session-specific directory
-  const secureDir = normalize(`${tempBase}/premiere-bridge-${sessionId}`);
-
-  return secureDir;
-}

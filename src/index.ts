@@ -11,6 +11,7 @@ import { Logger } from './utils/logger.js';
 import { PACKAGE_VERSION } from './version.js';
 import { checkForUpdate } from './utils/update-check.js';
 import { MCP_SERVER_INSTRUCTIONS } from './instructions.js';
+import { MCP_SERVER_NAME } from './brand.js';
 import {
   getTelemetry,
   summarizeToolFailure,
@@ -42,9 +43,9 @@ class MCPPremiereProServer {
   private buildServer(): Server {
     const server = new Server(
       {
-        name: 'adobe-premiere-pro-mcp',
+        name: MCP_SERVER_NAME,
         version: PACKAGE_VERSION,
-        description: 'Model Context Protocol tools for Adobe Premiere Pro - AI-powered video editing'
+        description: 'FalconCut - Model Context Protocol tools for Adobe Premiere Pro'
       },
       {
         capabilities: {
@@ -219,7 +220,7 @@ class MCPPremiereProServer {
         }
       });
       
-      this.logger.info('MCP Adobe Premiere Pro Server started successfully');
+      this.logger.info('FalconCut MCP server started successfully');
       this.telemetry.trackServerStarted();
       void checkForUpdate().then((status) => {
         if (status.available && !status.snoozed && status.nextStep) {
@@ -236,7 +237,7 @@ class MCPPremiereProServer {
     try {
       await this.stdioHandle?.close();
       await this.bridge.cleanup();
-      this.logger.info('MCP Adobe Premiere Pro Server stopped');
+      this.logger.info('FalconCut MCP server stopped');
     } catch (error) {
       this.logger.error('Error stopping server:', error);
       throw error;
@@ -251,19 +252,19 @@ const server = new MCPPremiereProServer();
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  console.error('\nShutting down MCP Adobe Premiere Pro Server...');
+  console.error('\nShutting down FalconCut MCP server...');
   await server.stop();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.error('\nShutting down MCP Adobe Premiere Pro Server...');
+  console.error('\nShutting down FalconCut MCP server...');
   await server.stop();
   process.exit(0);
 });
 
 // Start the server
 server.start().catch((error) => {
-  console.error('Failed to start MCP Adobe Premiere Pro Server:', error);
+  console.error('Failed to start FalconCut MCP server:', error);
   process.exit(1);
 }); 

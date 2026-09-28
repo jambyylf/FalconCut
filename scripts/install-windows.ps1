@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Installs the Premiere Pro MCP server and CEP bridge panel on Windows.
+    Installs the FalconCut MCP server and CEP panel on Windows.
 
 .DESCRIPTION
     Builds the MCP server, installs the CEP bridge into the per-user Adobe CEP
@@ -31,7 +31,7 @@
 
 [CmdletBinding()]
 param(
-    [string] $TempDir = (Join-Path $env:TEMP 'premiere-mcp-bridge'),
+    [string] $TempDir = (Join-Path $env:TEMP 'falconcut-bridge'),
     [string] $VsCodeConfigPath = (Join-Path $env:APPDATA 'Code\User\mcp.json'),
     [string] $ClaudeConfigPath = (Join-Path $env:APPDATA 'Claude\claude_desktop_config.json'),
     [switch] $SkipBuild,
@@ -50,7 +50,7 @@ if ($env:OS -ne 'Windows_NT') {
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptDir
 $cepExtensionsDir = Join-Path $env:APPDATA 'Adobe\CEP\extensions'
-$cepTargetDir = Join-Path $cepExtensionsDir 'MCPBridgeCEP'
+$cepTargetDir = Join-Path $cepExtensionsDir 'FalconCut'
 $distEntry = Join-Path $repoRoot 'dist\index.js'
 
 function Resolve-CommandPath([string] $Name) {
@@ -95,23 +95,23 @@ if (mode === "copilot") {
   if (!data.servers || typeof data.servers !== "object" || Array.isArray(data.servers)) {
     data.servers = {};
   }
-  data.servers["premiere-pro"] = {
+  data.servers["falconcut"] = {
     type: "stdio",
     command: nodePath,
     args: [distPath],
     env: {
-      PREMIERE_TEMP_DIR: tempPath
+      FALCONCUT_BRIDGE_DIR: tempPath
     }
   };
 } else if (mode === "claude") {
   if (!data.mcpServers || typeof data.mcpServers !== "object" || Array.isArray(data.mcpServers)) {
     data.mcpServers = {};
   }
-  data.mcpServers["premiere-pro"] = {
+  data.mcpServers["falconcut"] = {
     command: nodePath,
     args: [distPath],
     env: {
-      PREMIERE_TEMP_DIR: tempPath
+      FALCONCUT_BRIDGE_DIR: tempPath
     }
   };
 } else {
@@ -122,7 +122,7 @@ if (mode === "copilot") {
 fs.writeFileSync(configPath, `${JSON.stringify(data, null, 2)}\n`);
 '@
 
-    $helperPath = Join-Path $env:TEMP 'premiere-mcp-config-update.cjs'
+    $helperPath = Join-Path $env:TEMP 'falconcut-config-update.cjs'
     Set-Content -LiteralPath $helperPath -Value $helper -Encoding UTF8
 
     $oldConfigPath = $env:CONFIG_PATH
@@ -230,11 +230,11 @@ Write-Host 'Install complete.'
 Write-Host 'Next:'
 Write-Host '1. Restart VS Code and/or Claude Desktop so MCP config is reloaded.'
 Write-Host '2. Restart Premiere Pro.'
-Write-Host '3. Open Window > Extensions > MCP Bridge (CEP).'
+Write-Host '3. Open Window > Extensions > FalconCut.'
 Write-Host "4. Set Temp Directory to $TempDir."
 Write-Host '5. Click Save Configuration, Start Bridge, then Test Connection.'
 Write-Host ''
 Write-Host 'Manual MCP entry:'
 Write-Host "  command: $script:nodePath"
 Write-Host "  args:    $distEntry"
-Write-Host "  env:     PREMIERE_TEMP_DIR=$TempDir"
+Write-Host "  env:     FALCONCUT_BRIDGE_DIR=$TempDir"

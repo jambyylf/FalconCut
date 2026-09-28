@@ -25,7 +25,7 @@ jest.mock('node:crypto', () => ({
 
 describe('PremiereProBridge', () => {
   const mockFs = fs as jest.Mocked<typeof fs>;
-  const configuredTempDir = '/tmp/premiere-mcp-bridge-test';
+  const configuredTempDir = '/tmp/falconcut-bridge-test';
   const commandPath = path.join(configuredTempDir, 'command-test-uuid-1234.json');
   // The command is written to a scratch name and renamed into place, so the panel
   // never sees a partially written command-*.json while polling the directory.
@@ -34,11 +34,11 @@ describe('PremiereProBridge', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.PREMIERE_TEMP_DIR = configuredTempDir;
+    process.env.FALCONCUT_BRIDGE_DIR = configuredTempDir;
   });
 
   afterEach(() => {
-    delete process.env.PREMIERE_TEMP_DIR;
+    delete process.env.FALCONCUT_BRIDGE_DIR;
   });
 
   it('initializes using the configured temp directory', async () => {
@@ -48,7 +48,7 @@ describe('PremiereProBridge', () => {
 
     await bridge.initialize();
 
-    expect(mockFs.mkdir).toHaveBeenCalledWith('/tmp/premiere-mcp-bridge-test', {
+    expect(mockFs.mkdir).toHaveBeenCalledWith('/tmp/falconcut-bridge-test', {
       recursive: true,
       mode: 0o700
     });
@@ -316,8 +316,10 @@ describe('PremiereProBridge', () => {
     expect(mockFs.rm).not.toHaveBeenCalled();
   });
 
-  it('deletes generated temp directories when no external temp dir is configured', async () => {
-    delete process.env.PREMIERE_TEMP_DIR;
+  // FalconCut: айнымалы берілмесе сервер CEP панелі бақылайтын ортақ папканы
+  // қолданады және оны жұмыс соңында өшірмейді (панель оны әрі қарай қолданады).
+  it('falls back to the shared FalconCut bridge folder and keeps it on cleanup', async () => {
+    delete process.env.FALCONCUT_BRIDGE_DIR;
     const bridge = new PremiereProBridge();
     mockFs.mkdir.mockResolvedValue(undefined);
     mockFs.access.mockRejectedValue(new Error('Not found'));
@@ -326,9 +328,10 @@ describe('PremiereProBridge', () => {
     await bridge.initialize();
     await bridge.cleanup();
 
-    const generatedTempDir = process.platform === 'win32'
-      ? path.join(process.env.TEMP || 'C:\\Temp', 'premiere-bridge-test-uuid-1234')
-      : '/tmp/premiere-bridge-test-uuid-1234';
-    expect(mockFs.rm).toHaveBeenCalledWith(generatedTempDir, { recursive: true });
+    const sharedBridgeDir = process.platform === 'win32'
+      ? path.join(process.env.TEMP || 'C:\\Temp', 'falconcut-bridge')
+      : '/tmp/falconcut-bridge';
+    expect(mockFs.mkdir).toHaveBeenCalledWith(sharedBridgeDir, { recursive: true, mode: 0o700 });
+    expect(mockFs.rm).not.toHaveBeenCalled();
   });
 });

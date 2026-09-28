@@ -9,7 +9,7 @@ const packageJson = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'
 const zxpSignCommand = process.env.ZXP_SIGN_CMD;
 const certificatePath = process.env.ZXP_CERT_PATH;
 const certificatePassword = process.env.ZXP_CERT_PASSWORD;
-const outputPath = process.env.ZXP_OUTPUT_PATH || join(root, 'release-artifacts', `MCPBridgeCEP-v${packageJson.version}-self-signed.zxp`);
+const outputPath = process.env.ZXP_OUTPUT_PATH || join(root, 'release-artifacts', `FalconCut-v${packageJson.version}-self-signed.zxp`);
 
 if (!zxpSignCommand || !existsSync(zxpSignCommand)) {
   throw new Error('Set ZXP_SIGN_CMD to the Adobe ZXPSignCmd executable.');

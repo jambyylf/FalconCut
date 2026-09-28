@@ -1,20 +1,25 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
-  "name": "adobe-premiere-pro-mcp",
+  "name": "falconcut",
   "owner": {
-    "name": "Het Patel"
+    "name": "Zhambyl Bakytkeldi"
   },
   "metadata": {
-    "description": "Claude Code integration for local Adobe Premiere Pro editing through MCP."
+    "description": "Claude Code integration for local Adobe Premiere Pro editing through FalconCut."
   },
   "plugins": [
     {
-      "name": "premiere-pro-mcp",
-      "source": "./claude-plugins/premiere-pro-mcp",
-      "description": "Inspect, edit, verify, and export local Adobe Premiere Pro projects through MCP.",
+      "name": "falconcut",
+      "source": "./claude-plugins/falconcut",
+      "description": "Inspect, edit, verify, and export local Adobe Premiere Pro projects through FalconCut. Talks to the user in Kazakh.",
       "version": "1.2.8",
       "category": "creative",
-      "tags": ["premiere-pro", "video-editing", "mcp"]
+      "tags": [
+        "premiere-pro",
+        "video-editing",
+        "mcp",
+        "kazakh"
+      ]
     }
   ]
 }

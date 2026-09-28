@@ -11,7 +11,8 @@ import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'fs';
 import { extname, join, posix as pathPosix, win32 as pathWin32 } from 'path';
-import { createSecureTempDir, validateFilePath } from '../utils/security.js';
+import { validateFilePath } from '../utils/security.js';
+import { bridgeDir } from '../brand.js';
 import type { EnsureHostOptions, EnsureHostResult, PremiereProTransport } from './types.js';
 
 const execFileAsync = promisify(execFile);
@@ -21,9 +22,9 @@ export const BRIDGE_PANEL_ABSENT_MS = 1500;
 export const BRIDGE_HEARTBEAT_STALE_MS = 2500;
 export const HEALTH_CHECK_TIMEOUT_MS = 8000;
 export const BRIDGE_PANEL_NOT_RUNNING =
-  'MCP Bridge is not running. Open Adobe Premiere Pro. The MCP Bridge panel auto-starts when Premiere opens it. If the panel is missing, choose Window > Extensions > MCP Bridge. Call verify_premiere_connection once rather than retrying other tools.';
+  'MCP Bridge is not running. Open Adobe Premiere Pro. The FalconCut panel auto-starts the bridge when Premiere opens it. If the panel is missing, choose Window > Extensions > FalconCut. Call verify_premiere_connection once rather than retrying other tools.';
 export const BRIDGE_NOT_STARTED =
-  'MCP Bridge panel is open but the bridge is not started. Click Start Bridge, wait until it says Connected, then retry once.';
+  'FalconCut panel is open but the bridge is not started. Click Start Bridge, wait until it says Connected, then retry once.';
 export const PREMIERE_LAUNCH_WAIT_MS = 45000;
 
 /**
@@ -856,21 +857,18 @@ export class PremiereProBridge implements PremiereProTransport {
   private logger: Logger;
   private communicationMethod: 'uxp' | 'extendscript' | 'file';
   private tempDir: string;
-  private readonly usesExternalTempDir: boolean;
   private uxpProcess?: ChildProcess;
   private isInitialized = false;
-  private sessionId: string;
   private premiereInstallPath: string | null = null;
   private premiereLaunchPath: string | null = null;
 
   constructor() {
     this.logger = new Logger('PremiereProBridge');
     this.communicationMethod = 'file'; // Default to file-based communication
-    this.sessionId = randomUUID();
-    // Use PREMIERE_TEMP_DIR if set (same path as UXP plugin "Temp Directory"), else session-specific
-    const envDir = process.env.PREMIERE_TEMP_DIR;
-    this.usesExternalTempDir = Boolean(envDir);
-    this.tempDir = envDir ? envDir.replace(/\/$/, '') : createSecureTempDir(this.sessionId);
+    // FalconCut: FALCONCUT_BRIDGE_DIR берілсе соны, әйтпесе CEP панелі бақылайтын
+    // әдепкі ортақ папканы қолданамыз. Бұрын айнымалы берілмесе әр сессияға жеке
+    // кездейсоқ папка жасалатын, оны панель ешқашан таппайтын еді.
+    this.tempDir = bridgeDir();
   }
 
   async initialize(): Promise<void> {
@@ -994,8 +992,8 @@ export class PremiereProBridge implements PremiereProTransport {
 
     if (!running && !launched) {
       const nextStep = this.premiereInstallPath
-        ? 'Adobe Premiere Pro is installed but could not be launched from this environment. Open Premiere yourself. The MCP Bridge panel auto-starts. Then run verify_premiere_connection once.'
-        : 'Adobe Premiere Pro is not installed in the usual location, so this server cannot launch it. Open Premiere, choose Window > Extensions > MCP Bridge if the panel does not appear, and run verify_premiere_connection once.';
+        ? 'Adobe Premiere Pro is installed but could not be launched from this environment. Open Premiere yourself. The FalconCut panel auto-starts the bridge. Then run verify_premiere_connection once.'
+        : 'Adobe Premiere Pro is not installed in the usual location, so this server cannot launch it. Open Premiere, choose Window > Extensions > FalconCut if the panel does not appear, and run verify_premiere_connection once.';
       return {
         ready: false,
         success: false,
@@ -1023,7 +1021,7 @@ export class PremiereProBridge implements PremiereProTransport {
     }
 
     const nextStep = launched
-      ? 'Premiere was launched but the MCP Bridge panel did not connect in time. When Premiere finishes opening, confirm Window > Extensions > MCP Bridge is visible, then run verify_premiere_connection once. Do not retry other tools yet.'
+      ? 'Premiere was launched but the FalconCut panel did not connect in time. When Premiere finishes opening, confirm Window > Extensions > FalconCut is visible, then run verify_premiere_connection once. Do not retry other tools yet.'
       : BRIDGE_PANEL_NOT_RUNNING;
     return {
       ready: false,
@@ -1284,8 +1282,8 @@ export class PremiereProBridge implements PremiereProTransport {
     }
 
     throw new Error(
-      'Bridge response timeout. Ensure Premiere Pro is open, MCP Bridge (CEP or UXP) panel is open, ' +
-      'Temp Directory is set to ' + this.tempDir + ', and Start Bridge is clicked. Do not retry until the panel says Connected.'
+      'Bridge response timeout. Ensure Premiere Pro is open, the FalconCut panel (Window > Extensions > FalconCut) is open, ' +
+      'its bridge folder is set to ' + this.tempDir + ', and Start Bridge is clicked. Do not retry until the panel says Connected.'
     );
   }
 
@@ -2195,15 +2193,8 @@ export class PremiereProBridge implements PremiereProTransport {
       this.uxpProcess.kill();
     }
     
-    // Only remove temp dirs created by this server. The shared bridge directory is
-    // configured externally and should persist across restarts.
-    try {
-      if (!this.usesExternalTempDir) {
-        await fs.rm(this.tempDir, { recursive: true });
-      }
-    } catch (error) {
-      this.logger.warn('Failed to clean up temp directory:', error);
-    }
+    // FalconCut: көпір папкасы әрдайым CEP панелімен ортақ, сондықтан оны өшірмейміз —
+    // панель мен басқа сервер сессиялары оны әрі қарай қолданады.
     
     this.logger.info('Adobe Premiere Pro bridge cleaned up');
   }

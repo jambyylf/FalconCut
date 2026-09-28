@@ -1,5 +1,5 @@
 /**
- * MCP Premiere Pro Bridge (CEP)
+ * FalconCut — MCP Premiere Pro Bridge (CEP)
  * Uses CSInterface.evalScript to run ExtendScript in Premiere Pro.
  * Works in release Premiere Pro — no Beta or UXP Developer Tool required.
  */
@@ -208,16 +208,22 @@
         'JSON.parse = __mcpParse;'
     ].join('\n');
 
+    // FalconCut: көпір папкасы мен баптаулар папкасы түпнұсқа плагиннен бөлек,
+    // сондықтан екі панель бір-бірінің командаларын оқымайды.
+    var BRIDGE_DIR_ENV = 'FALCONCUT_BRIDGE_DIR';
+    var BRIDGE_DIR_NAME = 'falconcut-bridge';
+    var CONFIG_DIR_NAME = '.falconcut';
+
     function getDefaultTempPath() {
-        if (process.env.PREMIERE_TEMP_DIR) {
-            return sanitizeTempDirectoryInput(process.env.PREMIERE_TEMP_DIR);
+        if (process.env[BRIDGE_DIR_ENV]) {
+            return sanitizeTempDirectoryInput(process.env[BRIDGE_DIR_ENV]);
         }
         var base = (os.platform() === 'win32') ? (process.env.TEMP || process.env.TMP || 'C:\\Temp') : '/tmp';
-        return path.join(base, 'premiere-mcp-bridge');
+        return path.join(base, BRIDGE_DIR_NAME);
     }
 
     function getPanelConfigPath() {
-        var configDir = path.join(os.homedir(), '.premiere-mcp-bridge');
+        var configDir = path.join(os.homedir(), CONFIG_DIR_NAME);
         if (!fs.existsSync(configDir)) {
             fs.mkdirSync(configDir, { recursive: true });
         }
@@ -403,8 +409,8 @@
         try {
             if (trimmed.charAt(0) === '{') {
                 var parsed = JSON.parse(trimmed);
-                if (parsed && typeof parsed.PREMIERE_TEMP_DIR === 'string') {
-                    return normalizePathLiteral(parsed.PREMIERE_TEMP_DIR);
+                if (parsed && typeof parsed[BRIDGE_DIR_ENV] === 'string') {
+                    return normalizePathLiteral(parsed[BRIDGE_DIR_ENV]);
                 }
                 if (parsed && typeof parsed.tempDirectory === 'string') {
                     return normalizePathLiteral(parsed.tempDirectory);
@@ -412,7 +418,7 @@
             }
         } catch (e) {}
 
-        var envMatch = trimmed.match(/["']?PREMIERE_TEMP_DIR["']?\s*:\s*["']([^"']+)["']/);
+        var envMatch = trimmed.match(/["']?FALCONCUT_BRIDGE_DIR["']?\s*:\s*["']([^"']+)["']/);
         if (envMatch && envMatch[1]) {
             trimmed = normalizePathLiteral(envMatch[1]);
         } else {
@@ -447,7 +453,7 @@
     };
 
     MCPPremiereBridge.prototype.init = function() {
-        this.log('Initializing MCP Bridge (CEP)...', 'info');
+        this.log('Initializing FalconCut...', 'info');
 
         // Check host environment
         try {
@@ -480,7 +486,7 @@
     MCPPremiereBridge.prototype.getDiagnosticReportPath = function() {
         var tempDir = this.getTempDirectory();
         if (!tempDir) return null;
-        return path.join(tempDir, 'premiere-mcp-diagnostics-latest.json');
+        return path.join(tempDir, 'falconcut-diagnostics-latest.json');
     };
 
     MCPPremiereBridge.prototype.writeDiagnosticReport = function(report) {
@@ -778,8 +784,8 @@
             }
 
             var candidatePaths = this.tempDirectory ? [this.tempDirectory, getDefaultTempPath()] : [getDefaultTempPath()];
-            if (process.env.PREMIERE_TEMP_DIR) {
-                candidatePaths.push(sanitizeTempDirectoryInput(process.env.PREMIERE_TEMP_DIR));
+            if (process.env[BRIDGE_DIR_ENV]) {
+                candidatePaths.push(sanitizeTempDirectoryInput(process.env[BRIDGE_DIR_ENV]));
             }
 
             for (var i = 0; !this.tempDirectory && i < candidatePaths.length; i++) {
@@ -866,7 +872,7 @@
             this.updateServerStatus(false);
             return;
         }
-        this.log('Watching: ' + tempPath + ' (must match your MCP client PREMIERE_TEMP_DIR)', 'info');
+        this.log('Watching: ' + tempPath + ' (must match FALCONCUT_BRIDGE_DIR in your MCP client)', 'info');
         this.updateServerStatus(true);
         this.log('Bridge ready. Connect from Codex, Claude, or another MCP client using this same temp directory.', 'info');
     };
@@ -884,7 +890,7 @@
         var hostEnvironment = null;
         var report = {
             generatedAt: new Date().toISOString(),
-            panel: 'MCP Bridge (CEP)',
+            panel: 'FalconCut (CEP)',
             tempDirectory: this.getTempDirectory(),
             hostEnvironment: null,
             checks: []

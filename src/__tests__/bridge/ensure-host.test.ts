@@ -39,12 +39,12 @@ describe('ensureHost', () => {
   const mockFs = fs as jest.Mocked<typeof fs>;
   const mockSpawn = spawn as jest.MockedFunction<typeof spawn>;
   const mockExecFile = execFile as jest.MockedFunction<typeof execFile>;
-  const dir = '/tmp/premiere-mcp-bridge-test';
+  const dir = '/tmp/falconcut-bridge-test';
   const heartbeatPath = path.join(dir, 'bridge-heartbeat.json');
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.PREMIERE_TEMP_DIR = dir;
+    process.env.FALCONCUT_BRIDGE_DIR = dir;
     mockFs.mkdir.mockResolvedValue(undefined);
     mockFs.access.mockRejectedValue(new Error('missing'));
     mockFs.readdir.mockResolvedValue([] as never);
@@ -65,7 +65,7 @@ describe('ensureHost', () => {
   });
 
   afterEach(() => {
-    delete process.env.PREMIERE_TEMP_DIR;
+    delete process.env.FALCONCUT_BRIDGE_DIR;
   });
 
   it('is ready when the panel heartbeat is already started', async () => {

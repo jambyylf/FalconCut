@@ -15,7 +15,7 @@ export interface ToolContext {
   logger: Logger;
   /** The full catalog, including tools this server only exposes via invoke_tool. */
   listTools(): MCPTool[];
-  /** The subset advertised in tools/list under the active PREMIERE_MCP_TOOLSET. */
+  /** The subset advertised in tools/list under the active FALCONCUT_TOOLSET. */
   listAdvertisedTools(): MCPTool[];
 }
 

@@ -36,18 +36,18 @@ describe('placement that cannot be confirmed', () => {
   const mockFs = fs as jest.Mocked<typeof fs>;
   // Written straight to the polled name here. Publishing via a scratch file and
   // a rename is a separate change to the transport and is not part of this one.
-  const commandPath = '/tmp/premiere-mcp-bridge-test/command-test-uuid-1234.json';
+  const commandPath = '/tmp/falconcut-bridge-test/command-test-uuid-1234.json';
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.PREMIERE_TEMP_DIR = '/tmp/premiere-mcp-bridge-test';
+    process.env.FALCONCUT_BRIDGE_DIR = '/tmp/falconcut-bridge-test';
     mockFs.mkdir.mockResolvedValue(undefined);
     mockFs.access.mockRejectedValue(new Error('Not found'));
     mockFs.writeFile.mockResolvedValue(undefined);
     mockFs.unlink.mockResolvedValue(undefined);
     mockFs.readFile.mockResolvedValue(JSON.stringify({ result: { ok: true } }));
   });
-  afterEach(() => { delete process.env.PREMIERE_TEMP_DIR; });
+  afterEach(() => { delete process.env.FALCONCUT_BRIDGE_DIR; });
 
   const emitted = async (): Promise<string> => {
     const bridge = new PremiereProBridge();

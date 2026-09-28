@@ -8,18 +8,18 @@ const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const serverEntry = join(packageRoot, 'dist', 'index.js');
 
 function printHelp(): void {
-  console.log(`Premiere Pro MCP
+  console.log(`FalconCut
 
 Usage:
-  premiere-pro-mcp                 Start the MCP stdio server
-  premiere-pro-mcp --install-cep   Install the CEP bridge and configure supported MCP clients
-  premiere-pro-mcp --doctor        Check the local server, CEP bridge, and client configuration
-  premiere-pro-mcp --version       Print the installed package version
-  premiere-pro-mcp --help          Show this help
+  falconcut-mcp                 Start the MCP stdio server
+  falconcut-mcp --install-cep   Install the FalconCut CEP panel and configure supported MCP clients
+  falconcut-mcp --doctor        Check the local server, CEP panel, and client configuration
+  falconcut-mcp --version       Print the installed package version
+  falconcut-mcp --help          Show this help
 
 Telemetry is on by default. Set PREMIERE_MCP_TELEMETRY=0 to opt out.
 Update checks are on by default. Set PREMIERE_MCP_UPDATE_CHECK=0 to opt out.
-Tool search is on by default (search_tools + invoke_tool). Set PREMIERE_MCP_TOOLSET=full to advertise every Premiere tool to the MCP host.
+Tool search is on by default (search_tools + invoke_tool). Set FALCONCUT_TOOLSET=full to advertise every Premiere tool to the MCP host.
 `);
 }
 
@@ -45,7 +45,7 @@ async function runPlatformScript(macScript: string, windowsScript: string, windo
       ...windowsArgs,
     ]);
   } else {
-    throw new Error('Premiere Pro MCP setup is supported on macOS and Windows only.');
+    throw new Error('FalconCut setup is supported on macOS and Windows only.');
   }
 
   if (code !== 0) process.exitCode = code;

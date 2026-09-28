@@ -1,3 +1,5 @@
+import { TOOLSET_ENV } from '../brand.js';
+
 /**
  * Anthropic-style tool search for the Premiere catalog.
  *
@@ -139,7 +141,7 @@ function tokenize(text: string): string[] {
 }
 
 export function resolveToolset(env: NodeJS.Dict<string | undefined> = process.env): ToolsetMode {
-  const raw = String(env.PREMIERE_MCP_TOOLSET || '').trim().toLowerCase();
+  const raw = String(env[TOOLSET_ENV] || '').trim().toLowerCase();
   if (raw === 'full' || raw === 'all' || raw === 'off' || raw === '0') return 'full';
   return 'search';
 }
@@ -207,7 +209,7 @@ function clampLimit(limit: unknown): number {
 function nextStep(toolset: ToolsetMode): string {
   return toolset === 'full'
     ? 'Call a matched tool by name, or invoke_tool with that name and its arguments.'
-    : 'Call invoke_tool with the exact name and arguments. These matches are not top-level MCP tools unless PREMIERE_MCP_TOOLSET=full.';
+    : 'Call invoke_tool with the exact name and arguments. These matches are not top-level MCP tools unless FALCONCUT_TOOLSET=full.';
 }
 
 function projectMatch(tool: SearchableTool, score: number, detail: SearchDetail): ToolSearchMatch {

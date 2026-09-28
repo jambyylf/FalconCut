@@ -6,6 +6,7 @@ import { deflateSync } from 'node:zlib';
 import type { PremiereProTransport } from '../bridge/types.js';
 import { bridgeUnavailableResult, isBridgeUnavailableMessage } from '../bridge/errors.js';
 import type { MCPTool } from './types.js';
+import { bridgeDir } from '../brand.js';
 
 export const expandedToolNames = [
   'find_items_by_media_path',
@@ -285,7 +286,7 @@ export async function executeExpandedTool(
     }
 
     if (name === 'capture_frame' && !args.outputPath && !args.path) {
-      args = { ...args, outputPath: join(tmpdir(), `premiere-mcp-frame-${Date.now()}.png`) };
+      args = { ...args, outputPath: join(tmpdir(), `falconcut-frame-${Date.now()}.png`) };
     }
     const script = buildExpandedToolScript(name, args);
     const timeoutMs = name === 'ping' ? 8000 : undefined;
@@ -357,7 +358,7 @@ function encodeRgbaPng(width: number, height: number, pixelAt: (x: number, y: nu
 }
 
 async function writeGeneratedPng(fileName: string, width: number, height: number, pixelAt: (x: number, y: number) => [number, number, number, number]): Promise<string> {
-  const outputDir = join(process.env.PREMIERE_TEMP_DIR || '/tmp/premiere-mcp-bridge', 'generated-assets');
+  const outputDir = join(bridgeDir(), 'generated-assets');
   await fs.mkdir(outputDir, { recursive: true });
   const filePath = join(outputDir, fileName);
   await fs.writeFile(filePath, encodeRgbaPng(width, height, pixelAt));
@@ -559,7 +560,7 @@ async function deletePreviewFilesOnDisk(bridge: PremiereProTransport, args: Reco
     };
   }
 
-  const projectDir = info.projectPath ? dirname(String(info.projectPath)) : (process.env.PREMIERE_TEMP_DIR || '/tmp/premiere-mcp-bridge');
+  const projectDir = info.projectPath ? dirname(String(info.projectPath)) : bridgeDir();
   const explicitDir = args.previewDir || args.previewPath || args.path;
   const candidates = [
     explicitDir ? String(explicitDir) : '',

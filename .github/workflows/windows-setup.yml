@@ -43,10 +43,10 @@ jobs:
           powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/install-windows.ps1
           -SkipBuild
           -SkipAdobeDebugMode
-          -TempDir "$env:TEMP\premiere-mcp-bridge"
+          -TempDir "$env:TEMP\falconcut-bridge"
 
       - name: Run Windows doctor
         shell: powershell
         run: >
           powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/doctor-windows.ps1
-          -TempDir "$env:TEMP\premiere-mcp-bridge"
+          -TempDir "$env:TEMP\falconcut-bridge"

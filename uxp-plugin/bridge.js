@@ -1,5 +1,5 @@
 /**
- * MCP Premiere Pro Bridge (UXP Compatible)
+ * FalconCut — MCP Premiere Pro Bridge (UXP Compatible)
  *
  * This script handles communication between the MCP server and Adobe Premiere Pro
  * through the UXP plugin system.
@@ -14,7 +14,7 @@ class MCPPremiereBridge {
     constructor() {
         this.isConnected = false;
         this.mcpServerPort = 3000;
-        this.tempDirectory = '/tmp/premiere-mcp-bridge';
+        this.tempDirectory = '/tmp/falconcut-bridge';
         this.commandQueue = [];
         this.isProcessing = false;
         this.pollingInterval = null;
@@ -25,7 +25,7 @@ class MCPPremiereBridge {
 
     async init() {
         try {
-            this.log('Initializing MCP Premiere Pro Bridge (UXP)...', 'info');
+            this.log('Initializing FalconCut (UXP)...', 'info');
             await this.loadConfig();
             this.updateUI();
             if (this.tempFolderToken) {
@@ -293,8 +293,8 @@ class MCPPremiereBridge {
     async loadConfig() {
         try {
             // UXP localStorage for simple config
-            const savedTempPath = localStorage.getItem('mcp_temp_directory');
-            const savedServerPort = localStorage.getItem('mcp_server_port');
+            const savedTempPath = localStorage.getItem('falconcut_temp_directory');
+            const savedServerPort = localStorage.getItem('falconcut_server_port');
 
             if (savedTempPath) {
                 this.tempDirectory = savedTempPath;
@@ -319,8 +319,8 @@ class MCPPremiereBridge {
             const serverPort = document.getElementById('serverPort')?.value || '3000';
             const tempDirectory = document.getElementById('tempDirectory')?.value || this.tempDirectory;
 
-            localStorage.setItem('mcp_server_port', serverPort);
-            localStorage.setItem('mcp_temp_directory', tempDirectory);
+            localStorage.setItem('falconcut_server_port', serverPort);
+            localStorage.setItem('falconcut_temp_directory', tempDirectory);
 
             this.mcpServerPort = parseInt(serverPort);
             this.tempDirectory = tempDirectory;

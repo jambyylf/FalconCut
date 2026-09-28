@@ -10,25 +10,25 @@ const packageJson = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'
 const outputDirectory = join(root, 'release-artifacts');
 const stagingDirectory = join(root, '.mcpb-staging');
 const serverDirectory = join(stagingDirectory, 'server');
-const outputPath = join(outputDirectory, `adobe-premiere-pro-mcp-${packageJson.version}.mcpb`);
+const outputPath = join(outputDirectory, `falconcut-mcp-${packageJson.version}.mcpb`);
 
 const manifest = {
   manifest_version: '0.3',
-  name: 'adobe-premiere-pro-mcp',
-  display_name: 'Adobe Premiere Pro MCP',
+  name: 'falconcut-mcp',
+  display_name: 'FalconCut',
   version: packageJson.version,
-  description: 'Control Adobe Premiere Pro through MCP using the included CEP bridge.',
-  long_description: 'A local MCP server for Adobe Premiere Pro. On first launch the bundle installs its CEP bridge for the current user. Restart Premiere Pro, open Window > Extensions > MCP Bridge (CEP), and start the bridge before requesting edits.',
+  description: 'Control Adobe Premiere Pro through MCP using the included FalconCut CEP panel.',
+  long_description: 'A local MCP server for Adobe Premiere Pro. On first launch the bundle installs its FalconCut CEP panel for the current user. Restart Premiere Pro, open Window > Extensions > FalconCut, and the bridge starts by itself before you request edits.',
   author: {
-    name: 'hetpatel-11',
-    url: 'https://github.com/hetpatel-11/Adobe_Premiere_Pro_MCP'
+    name: 'Zhambyl Bakytkeldi',
+    url: 'https://github.com/jambyylf/FalconCut'
   },
   repository: {
     type: 'git',
-    url: 'https://github.com/hetpatel-11/Adobe_Premiere_Pro_MCP.git'
+    url: 'https://github.com/jambyylf/FalconCut.git'
   },
-  documentation: 'https://github.com/hetpatel-11/Adobe_Premiere_Pro_MCP#install',
-  support: 'https://github.com/hetpatel-11/Adobe_Premiere_Pro_MCP/issues',
+  documentation: 'https://github.com/jambyylf/FalconCut#readme',
+  support: 'https://github.com/jambyylf/FalconCut/issues',
   server: {
     type: 'node',
     entry_point: 'server/launcher.js',
@@ -54,25 +54,26 @@ import { spawn, spawnSync } from 'node:child_process';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const bridgeSource = join(root, 'cep-plugin');
-const tempDirectory = process.env.PREMIERE_TEMP_DIR || join(tmpdir(), 'premiere-mcp-bridge');
+// CEP панелі де дәл осы жолды қолданады: macOS-та /tmp, Windows-та %TEMP%
+const tempDirectory = process.env.FALCONCUT_BRIDGE_DIR || join(process.platform === 'win32' ? tmpdir() : '/tmp', 'falconcut-bridge');
 
 function installCepBridge() {
   let target;
   if (process.platform === 'darwin') {
-    target = join(homedir(), 'Library', 'Application Support', 'Adobe', 'CEP', 'extensions', 'MCPBridgeCEP');
+    target = join(homedir(), 'Library', 'Application Support', 'Adobe', 'CEP', 'extensions', 'FalconCut');
     for (let version = 9; version <= 15; version += 1) {
       spawnSync('defaults', ['write', 'com.adobe.CSXS.' + version, 'PlayerDebugMode', '-bool', 'true'], { stdio: 'ignore' });
     }
   } else if (process.platform === 'win32') {
-    target = join(process.env.APPDATA || homedir(), 'Adobe', 'CEP', 'extensions', 'MCPBridgeCEP');
+    target = join(process.env.APPDATA || homedir(), 'Adobe', 'CEP', 'extensions', 'FalconCut');
     for (let version = 9; version <= 15; version += 1) {
       spawnSync('reg.exe', ['add', 'HKCU\\\\Software\\\\Adobe\\\\CSXS.' + version, '/v', 'PlayerDebugMode', '/t', 'REG_SZ', '/d', '1', '/f'], { stdio: 'ignore' });
     }
   } else {
-    throw new Error('Adobe Premiere Pro MCP supports macOS and Windows only.');
+    throw new Error('FalconCut supports macOS and Windows only.');
   }
 
-  if (!existsSync(bridgeSource)) throw new Error('The bundled CEP bridge is missing. Reinstall the MCP bundle.');
+  if (!existsSync(bridgeSource)) throw new Error('The bundled FalconCut CEP panel is missing. Reinstall the MCP bundle.');
   cpSync(bridgeSource, target, { recursive: true, force: true });
   mkdirSync(tempDirectory, { recursive: true });
 }
@@ -80,16 +81,16 @@ function installCepBridge() {
 try {
   installCepBridge();
 } catch (error) {
-  process.stderr.write('Premiere Pro MCP setup failed: ' + (error instanceof Error ? error.message : String(error)) + '\\n');
+  process.stderr.write('FalconCut setup failed: ' + (error instanceof Error ? error.message : String(error)) + '\\n');
   process.exit(1);
 }
 
 const server = spawn(process.execPath, [join(root, 'dist', 'index.js')], {
   stdio: 'inherit',
-  env: { ...process.env, PREMIERE_TEMP_DIR: tempDirectory }
+  env: { ...process.env, FALCONCUT_BRIDGE_DIR: tempDirectory }
 });
 server.on('error', (error) => {
-  process.stderr.write('Premiere Pro MCP failed to start: ' + error.message + '\\n');
+  process.stderr.write('FalconCut failed to start: ' + error.message + '\\n');
   process.exit(1);
 });
 server.on('exit', (code) => process.exit(code ?? 1));

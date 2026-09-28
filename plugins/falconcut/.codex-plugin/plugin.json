@@ -1,0 +1,42 @@
+{
+  "name": "falconcut",
+  "version": "1.2.8",
+  "description": "Inspect, edit, verify, and export local Adobe Premiere Pro projects through the FalconCut panel.",
+  "author": {
+    "name": "Zhambyl Bakytkeldi",
+    "url": "https://github.com/jambyylf"
+  },
+  "homepage": "https://github.com/jambyylf/FalconCut",
+  "repository": "https://github.com/jambyylf/FalconCut",
+  "license": "MIT",
+  "keywords": [
+    "premiere-pro",
+    "video-editing",
+    "mcp",
+    "timeline",
+    "export",
+    "kazakh"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "FalconCut",
+    "shortDescription": "Operate local Premiere projects through MCP, in Kazakh",
+    "longDescription": "Install the local FalconCut MCP server, verify the CEP panel, and perform evidence-based editing workflows from Codex.",
+    "developerName": "Zhambyl Bakytkeldi",
+    "category": "Creativity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/jambyylf/FalconCut",
+    "privacyPolicyURL": "https://github.com/jambyylf/FalconCut/blob/main/PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/jambyylf/FalconCut/blob/main/TERMS.md",
+    "defaultPrompt": [
+      "Premiere-мен байланысты тексер, жобаға ешқандай өзгеріс енгізбе.",
+      "Белсенді секвенцияны қарап, тректерін қысқаша айтып бер.",
+      "Мына жергілікті файлдардан алғашқы монтаж жасап, нәтижесін тексер."
+    ],
+    "brandColor": "#5FD3C6"
+  }
+}

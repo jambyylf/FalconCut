@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Verifies the Windows Premiere Pro MCP install.
+    Verifies the Windows FalconCut install.
 #>
 
 [CmdletBinding()]
 param(
-    [string] $TempDir = (Join-Path $env:TEMP 'premiere-mcp-bridge'),
+    [string] $TempDir = (Join-Path $env:TEMP 'falconcut-bridge'),
     [string] $VsCodeConfigPath = (Join-Path $env:APPDATA 'Code\User\mcp.json'),
     [string] $ClaudeConfigPath = (Join-Path $env:APPDATA 'Claude\claude_desktop_config.json')
 )
@@ -19,7 +19,7 @@ if ($env:OS -ne 'Windows_NT') {
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptDir
-$cepTargetDir = Join-Path $env:APPDATA 'Adobe\CEP\extensions\MCPBridgeCEP'
+$cepTargetDir = Join-Path $env:APPDATA 'Adobe\CEP\extensions\FalconCut'
 $distEntry = Join-Path $repoRoot 'dist\index.js'
 $failures = 0
 
@@ -61,16 +61,16 @@ function Test-JsonServer([string] $Path, [string] $RootKey) {
         return
     }
 
-    $server = $root.Value.PSObject.Properties['premiere-pro']
+    $server = $root.Value.PSObject.Properties['falconcut']
     if (-not $server) {
-        Fail "$Path missing premiere-pro"
+        Fail "$Path missing falconcut"
         return
     }
 
-    Pass "$Path contains premiere-pro"
+    Pass "$Path contains falconcut"
 }
 
-Write-Host 'Premiere Pro MCP doctor (Windows)'
+Write-Host 'FalconCut doctor (Windows)'
 Write-Host ''
 
 Write-Host 'Node.js'

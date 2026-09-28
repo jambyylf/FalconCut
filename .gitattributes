@@ -1,0 +1,3 @@
+# FalconCut: bash скрипттері Windows-та клондалса да LF жол соңымен қалуы керек,
+# әйтпесе macOS/Git Bash оларды орындай алмайды.
+*.sh text eol=lf

@@ -582,8 +582,8 @@ describe('PremiereProTools', () => {
     });
 
     it('reports local capabilities without probing the Premiere bridge by default', async () => {
-      const previous = process.env.PREMIERE_MCP_TOOLSET;
-      delete process.env.PREMIERE_MCP_TOOLSET;
+      const previous = process.env.FALCONCUT_TOOLSET;
+      delete process.env.FALCONCUT_TOOLSET;
       try {
         const result = await tools.executeTool('get_capabilities', {});
 
@@ -602,8 +602,8 @@ describe('PremiereProTools', () => {
         expect(result.update.available).toBe(false);
         expect(mockBridge.executeScript).not.toHaveBeenCalled();
       } finally {
-        if (previous === undefined) delete process.env.PREMIERE_MCP_TOOLSET;
-        else process.env.PREMIERE_MCP_TOOLSET = previous;
+        if (previous === undefined) delete process.env.FALCONCUT_TOOLSET;
+        else process.env.FALCONCUT_TOOLSET = previous;
       }
     });
 
@@ -718,7 +718,7 @@ describe('PremiereProTools', () => {
       await executeExpandedTool(mockBridge, 'capture_frame', {});
       const captureScript = mockBridge.executeScript.mock.calls[1][0] as string;
       expect(captureScript).toContain('__qeSequenceForRetry');
-      expect(captureScript).toContain('premiere-mcp-frame-');
+      expect(captureScript).toContain('falconcut-frame-');
     });
 
     it('creates a sequence from a single projectItemId or a timeline clip id', async () => {

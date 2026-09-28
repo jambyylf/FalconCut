@@ -11,14 +11,14 @@ if (process.platform !== 'darwin') {
 const zxpSignCommand = process.env.ZXP_SIGN_CMD;
 if (!zxpSignCommand) throw new Error('Set ZXP_SIGN_CMD to the Adobe ZXPSignCmd executable.');
 
-const certificatePath = process.env.ZXP_CERT_PATH || join(homedir(), 'Library', 'Application Support', 'Adobe_Premiere_Pro_MCP', 'signing', 'premiere-mcp-self-signed.p12');
-const service = 'adobe-premiere-pro-mcp-zxp-signing';
+const certificatePath = process.env.ZXP_CERT_PATH || join(homedir(), 'Library', 'Application Support', 'FalconCut', 'signing', 'falconcut-self-signed.p12');
+const service = 'falconcut-zxp-signing';
 const account = 'certificate-password';
 const password = randomBytes(32).toString('base64url');
 
 await mkdir(dirname(certificatePath), { recursive: true });
 execFileSync(zxpSignCommand, [
-  '-selfSignedCert', 'US', 'CA', 'Het Patel', 'Adobe Premiere Pro MCP', password, certificatePath,
+  '-selfSignedCert', 'KZ', 'Almaty', 'Zhambyl Bakytkeldi', 'FalconCut', password, certificatePath,
   '-validityDays', '3650'
 ], { stdio: 'inherit' });
 await chmod(certificatePath, 0o600);

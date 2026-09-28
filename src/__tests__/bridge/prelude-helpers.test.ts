@@ -25,18 +25,18 @@ jest.mock('node:crypto', () => ({ randomUUID: jest.fn(() => 'test-uuid-1234') })
 
 describe('prelude QE helpers', () => {
   const mockFs = fs as jest.Mocked<typeof fs>;
-  const commandPath = '/tmp/premiere-mcp-bridge-test/command-test-uuid-1234.json';
+  const commandPath = '/tmp/falconcut-bridge-test/command-test-uuid-1234.json';
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.PREMIERE_TEMP_DIR = '/tmp/premiere-mcp-bridge-test';
+    process.env.FALCONCUT_BRIDGE_DIR = '/tmp/falconcut-bridge-test';
     mockFs.mkdir.mockResolvedValue(undefined);
     mockFs.access.mockRejectedValue(new Error('Not found'));
     mockFs.writeFile.mockResolvedValue(undefined);
     mockFs.unlink.mockResolvedValue(undefined);
     mockFs.readFile.mockResolvedValue(JSON.stringify({ result: { ok: true } }));
   });
-  afterEach(() => { delete process.env.PREMIERE_TEMP_DIR; });
+  afterEach(() => { delete process.env.FALCONCUT_BRIDGE_DIR; });
 
   /** Runs the prelude's helper definitions, then `extra`, in an isolated context. */
   const runWithPrelude = async (extra: string): Promise<Record<string, unknown>> => {

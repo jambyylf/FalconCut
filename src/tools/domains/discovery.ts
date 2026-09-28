@@ -10,6 +10,7 @@ import { homedir, platform } from 'node:os';
 import { basename, dirname, extname, join, parse } from 'node:path';
 import { checkForUpdate } from '../../utils/update-check.js';
 import { resolveToolset } from '../search.js';
+import { CEP_FOLDER_NAME, bridgeDir } from '../../brand.js';
 import type { ToolContext, ToolModule } from '../context.js';
 import { buildSequenceResolver } from './shared.js';
 
@@ -363,7 +364,7 @@ async function verifyPremiereConnection(ctx: ToolContext, launchIfNeeded = true)
           success: false,
           status: 'unavailable',
           error: e.toString(),
-          nextStep: 'Open Window > Extensions > MCP Bridge if the panel is missing, then run verify_premiere_connection again.'
+          nextStep: 'Open Window > Extensions > FalconCut if the panel is missing, then run verify_premiere_connection again.'
         });
       }
     `;
@@ -374,9 +375,9 @@ async function verifyPremiereConnection(ctx: ToolContext, launchIfNeeded = true)
 async function getCapabilities(ctx: ToolContext, checkConnection = false): Promise<any> {
   const currentPlatform = platform();
   const cepExtensionPath = currentPlatform === 'darwin'
-    ? join(homedir(), 'Library', 'Application Support', 'Adobe', 'CEP', 'extensions', 'MCPBridgeCEP')
+    ? join(homedir(), 'Library', 'Application Support', 'Adobe', 'CEP', 'extensions', CEP_FOLDER_NAME)
     : currentPlatform === 'win32'
-      ? join(process.env.APPDATA || homedir(), 'Adobe', 'CEP', 'extensions', 'MCPBridgeCEP')
+      ? join(process.env.APPDATA || homedir(), 'Adobe', 'CEP', 'extensions', CEP_FOLDER_NAME)
       : null;
 
   let cepInstalled = false;
@@ -414,7 +415,7 @@ async function getCapabilities(ctx: ToolContext, checkConnection = false): Promi
     runtime: {
       platform: currentPlatform,
       transport: 'stdio',
-      bridgeDirectory: process.env.PREMIERE_TEMP_DIR || null
+      bridgeDirectory: bridgeDir()
     },
     update: await checkForUpdate(),
     bridge: {
@@ -440,7 +441,7 @@ async function getCapabilities(ctx: ToolContext, checkConnection = false): Promi
     liveConnection,
     safety: {
       recommendedFirstCall: 'verify_premiere_connection',
-      toolDiscovery: 'search_tools then invoke_tool. Set PREMIERE_MCP_TOOLSET=full to advertise every tool to the MCP host.',
+      toolDiscovery: 'search_tools then invoke_tool. Set FALCONCUT_TOOLSET=full to advertise every tool to the MCP host.',
       rawExtendScript: 'Available through execute_extendscript and evaluate_expression. Require explicit user approval before using either tool.',
       note: 'A detected CEP installation does not prove that Premiere is running or the bridge is connected.'
     }

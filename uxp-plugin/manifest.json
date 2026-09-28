@@ -1,6 +1,6 @@
 {
-  "id": "com.mcp.premiere.uxpbridge",
-  "name": "MCP Bridge (UXP)",
+  "id": "kz.onair.falconcut.uxp",
+  "name": "FalconCut (UXP)",
   "version": "1.0.0",
   "host": {
     "app": "premierepro",
@@ -14,8 +14,8 @@
   "entrypoints": [
     {
       "type": "panel",
-      "id": "mcp-uxp-bridge-panel",
-      "label": { "default": "MCP Bridge (UXP)" },
+      "id": "falconcut-uxp-panel",
+      "label": { "default": "FalconCut (UXP)" },
       "file": "index.html"
     }
   ],

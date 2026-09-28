@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP Premiere Pro Bridge</title>
+    <title>FalconCut (UXP)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -192,7 +192,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>MCP Premiere Pro Bridge</h1>
+        <h1>FalconCut (UXP)</h1>
         
         <!-- Status Section -->
         <div class="status-section">
@@ -211,7 +211,7 @@
         <div class="config-section">
             <div class="section-title">Configuration</div>
             <input type="text" id="serverPort" placeholder="MCP Server Port (default: 3000)" value="3000">
-            <input type="text" id="tempDirectory" placeholder="Temp Directory Path" value="/tmp/premiere-mcp-bridge" readonly>
+            <input type="text" id="tempDirectory" placeholder="Temp Directory Path" value="/tmp/falconcut-bridge" readonly>
             <button onclick="selectTempFolder()">Select Temp Folder</button>
             <button onclick="saveConfig()">Save Configuration</button>
         </div>
@@ -239,7 +239,7 @@
         <div class="log-section">
             <div class="section-title">Activity Log</div>
             <div class="log-container" id="logContainer">
-                <div class="log-entry info">MCP Premiere Pro Bridge loaded</div>
+                <div class="log-entry info">FalconCut (UXP) loaded</div>
                 <div class="log-entry info">Ready to start bridge connection</div>
             </div>
         </div>

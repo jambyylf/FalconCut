@@ -1,5 +1,5 @@
 /**
- * Simple logger utility for MCP Adobe Premiere Pro Server
+ * Simple logger utility for the FalconCut MCP server
  */
 
 export enum LogLevel {

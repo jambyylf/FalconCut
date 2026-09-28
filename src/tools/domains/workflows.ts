@@ -6,6 +6,7 @@
  */
 import { z } from 'zod';
 import { createMotionDemoAssets } from '../../utils/demoAssets.js';
+import { bridgeDir } from '../../brand.js';
 import type { ToolContext, ToolModule } from '../context.js';
 import { motionStyleSchema, clipPlanSchema } from '../schemas.js';
 import { listSequenceTracks } from './discovery.js';
@@ -126,7 +127,7 @@ interface BuildBrandSpotArgs extends AssembleProductSpotArgs {
 }
 
 async function buildMotionGraphicsDemo(ctx: ToolContext, sequenceName = 'Apple Like Motion Demo'): Promise<any> {
-  const assetBase = process.env.PREMIERE_TEMP_DIR || '/tmp';
+  const assetBase = bridgeDir();
   const assetDir = `${assetBase.replace(/\/$/, '')}/motion-demo-${Date.now()}`;
   const assets = await createMotionDemoAssets(assetDir);
 

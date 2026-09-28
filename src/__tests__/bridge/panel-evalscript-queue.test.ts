@@ -63,7 +63,7 @@ describe('CEP panel auto-start', () => {
     bridge.updateUI = () => {};
     bridge.startCommandPolling = () => {};
     bridge.checkForPackageUpdate = () => {};
-    bridge.getTempDirectory = () => '/tmp/premiere-mcp-bridge';
+    bridge.getTempDirectory = () => '/tmp/falconcut-bridge';
     bridge.startBridge = function () { started.push('started'); };
     bridge.csInterface = { getHostEnvironment: () => ({ appName: 'PPRO', appVersion: '26.0.0' }) };
     bridge.log = () => {};
@@ -75,13 +75,13 @@ describe('CEP panel auto-start', () => {
 describe('CEP panel heartbeat', () => {
   it('writes bridge-heartbeat.json so the server can fail fast when Premiere is not listening', () => {
     const { bridge, fs } = loadPanel();
-    bridge.getTempDirectory = () => '/tmp/premiere-mcp-bridge';
+    bridge.getTempDirectory = () => '/tmp/falconcut-bridge';
     bridge.isConnected = true;
 
     bridge.writeHeartbeat();
 
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      '/tmp/premiere-mcp-bridge/bridge-heartbeat.json',
+      '/tmp/falconcut-bridge/bridge-heartbeat.json',
       expect.stringMatching(/"started":true/),
     );
   });

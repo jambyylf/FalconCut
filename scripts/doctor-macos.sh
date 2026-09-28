@@ -10,9 +10,9 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DIST_ENTRY="$REPO_ROOT/dist/index.js"
-CEP_TARGET_DIR="$HOME/Library/Application Support/Adobe/CEP/extensions/MCPBridgeCEP"
+CEP_TARGET_DIR="$HOME/Library/Application Support/Adobe/CEP/extensions/FalconCut"
 CLAUDE_CONFIG_PATH="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-TEMP_DIR="/tmp/premiere-mcp-bridge"
+TEMP_DIR="/tmp/falconcut-bridge"
 FAILURES=0
 
 pass() {
@@ -83,7 +83,7 @@ const tempPath = process.env.TEMP_PATH;
 try {
   const raw = fs.readFileSync(configPath, "utf8");
   const data = JSON.parse(raw);
-  const server = data && data.mcpServers && data.mcpServers["premiere-pro"];
+  const server = data && data.mcpServers && data.mcpServers["falconcut"];
 
   if (!server) {
     console.log("missing-server");
@@ -91,7 +91,7 @@ try {
   }
 
   const arg0 = Array.isArray(server.args) ? server.args[0] : "";
-  const temp = server.env && server.env.PREMIERE_TEMP_DIR;
+  const temp = server.env && server.env.FALCONCUT_BRIDGE_DIR;
 
   if (server.command !== "node") {
     console.log(`bad-command:${server.command || ""}`);
@@ -110,13 +110,13 @@ try {
 
   case "$CONFIG_CHECK" in
     ok)
-      pass "Claude Desktop config contains a valid premiere-pro entry"
+      pass "Claude Desktop config contains a valid falconcut entry"
       ;;
     missing-server)
-      fail "Claude Desktop config is present but missing the premiere-pro entry"
+      fail "Claude Desktop config is present but missing the falconcut entry"
       ;;
     bad-command:*)
-      fail "Claude Desktop config has a premiere-pro entry with the wrong command (${CONFIG_CHECK#bad-command:})"
+      fail "Claude Desktop config has a falconcut entry with the wrong command (${CONFIG_CHECK#bad-command:})"
       ;;
     bad-path:*)
       fail "Claude Desktop config points to the wrong dist path (${CONFIG_CHECK#bad-path:})"
@@ -136,7 +136,7 @@ else
 fi
 
 info "Premiere panel check must still be done manually inside Premiere Pro."
-info "Open Window > Extensions > MCP Bridge (CEP), then click Test Connection."
+info "Open Window > Extensions > FalconCut, then click Test Connection."
 
 if [[ "$FAILURES" -gt 0 ]]; then
   echo

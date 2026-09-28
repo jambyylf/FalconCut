@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="10.0" ExtensionBundleId="com.mcp.premiere.cepbridge" ExtensionBundleVersion="1.1.6" ExtensionBundleName="MCP Bridge (CEP)">
+<ExtensionManifest Version="10.0" ExtensionBundleId="kz.onair.falconcut" ExtensionBundleVersion="1.1.6" ExtensionBundleName="FalconCut">
   <ExtensionList>
-    <Extension Id="com.mcp.premiere.cepbridge.panel" Version="1.1.6"/>
+    <Extension Id="kz.onair.falconcut.panel" Version="1.1.6"/>
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
@@ -15,7 +15,7 @@
     </RequiredRuntimeList>
   </ExecutionEnvironment>
   <DispatchInfoList>
-    <Extension Id="com.mcp.premiere.cepbridge.panel">
+    <Extension Id="kz.onair.falconcut.panel">
       <DispatchInfo>
         <Resources>
           <MainPath>./index.html</MainPath>
@@ -29,7 +29,7 @@
         </Lifecycle>
         <UI>
           <Type>Panel</Type>
-          <Menu>MCP Bridge (CEP)</Menu>
+          <Menu>FalconCut</Menu>
           <Geometry>
             <Size>
               <Height>400</Height>

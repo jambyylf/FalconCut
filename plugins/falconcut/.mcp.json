@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "falconcut": {
+      "command": "falconcut-mcp"
+    }
+  }
+}

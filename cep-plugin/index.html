@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP Bridge (CEP)</title>
+    <title>FalconCut</title>
     <style>
         :root {
             --bg-0: #0b1218;
@@ -521,7 +521,7 @@
     <div class="shell">
         <section class="hero">
             <div class="eyebrow">Premiere Automation</div>
-            <h1>MCP Bridge (CEP)</h1>
+            <h1>FalconCut</h1>
             <div class="hero-copy">
                 Real-time file bridge for Codex and other MCP clients. Keep the temp path aligned, start the bridge, and the panel will execute commands inside Premiere Pro.
             </div>
@@ -593,10 +593,10 @@
                 <span>Shared temp directory</span>
             </div>
             <div class="config-copy">
-                This must match the `PREMIERE_TEMP_DIR` value used by your MCP client.
+                This must match the `FALCONCUT_BRIDGE_DIR` value used by your MCP client.
             </div>
             <label for="tempDirectory">Temp Directory</label>
-            <input type="text" id="tempDirectory" placeholder="Temp Directory (e.g. /tmp/premiere-mcp-bridge)">
+            <input type="text" id="tempDirectory" placeholder="Temp Directory (e.g. /tmp/falconcut-bridge)">
             <label class="toggle-row" for="telemetryEnabled">
                 <input type="checkbox" id="telemetryEnabled" checked onchange="saveTelemetryPreference()">
                 <span class="toggle-copy">
@@ -643,12 +643,12 @@
                 <span>Recent messages</span>
             </div>
             <div class="log-container" id="logContainer">
-                <div class="log-entry info">MCP Bridge (CEP) loaded. The bridge starts automatically when this panel opens.</div>
-                <div class="log-entry info">Set the temp directory to match your MCP client if it is not already /tmp/premiere-mcp-bridge.</div>
+                <div class="log-entry info">FalconCut loaded. The bridge starts automatically when this panel opens.</div>
+                <div class="log-entry info">Set the temp directory to match your MCP client if it is not already /tmp/falconcut-bridge.</div>
             </div>
         </section>
 
-        <div class="footer-note">MCP Bridge CEP Panel</div>
+        <div class="footer-note">FalconCut CEP Panel</div>
     </div>
 
     <script src="CSInterface.js"></script>

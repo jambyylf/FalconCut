@@ -8,12 +8,12 @@ import {
 jest.mock('../../bridge/index.js');
 
 function stubToolset(value: string | undefined): () => void {
-  const previous = process.env.PREMIERE_MCP_TOOLSET;
-  if (value === undefined) delete process.env.PREMIERE_MCP_TOOLSET;
-  else process.env.PREMIERE_MCP_TOOLSET = value;
+  const previous = process.env.FALCONCUT_TOOLSET;
+  if (value === undefined) delete process.env.FALCONCUT_TOOLSET;
+  else process.env.FALCONCUT_TOOLSET = value;
   return () => {
-    if (previous === undefined) delete process.env.PREMIERE_MCP_TOOLSET;
-    else process.env.PREMIERE_MCP_TOOLSET = previous;
+    if (previous === undefined) delete process.env.FALCONCUT_TOOLSET;
+    else process.env.FALCONCUT_TOOLSET = previous;
   };
 }
 
@@ -21,7 +21,7 @@ describe('tool search', () => {
   const tools = new PremiereProTools({ executeScript: async () => ({ success: true }) } as never);
 
   afterEach(() => {
-    delete process.env.PREMIERE_MCP_TOOLSET;
+    delete process.env.FALCONCUT_TOOLSET;
   });
 
   it('defaults to the Anthropic-style always-on set', () => {
@@ -36,7 +36,7 @@ describe('tool search', () => {
     }
   });
 
-  it('lists the full catalog when PREMIERE_MCP_TOOLSET=full', () => {
+  it('lists the full catalog when FALCONCUT_TOOLSET=full', () => {
     const restore = stubToolset('full');
     try {
       expect(resolveToolset()).toBe('full');

@@ -31,14 +31,14 @@ jest.mock('node:crypto', () => ({
 
 describe('bridge file-queue protocol', () => {
   const mockFs = fs as jest.Mocked<typeof fs>;
-  const dir = '/tmp/premiere-mcp-bridge-test';
+  const dir = '/tmp/falconcut-bridge-test';
   const commandPath = path.join(dir, 'command-test-uuid-1234.json');
   const responsePath = path.join(dir, 'response-test-uuid-1234.json');
   const stagingPath = path.join(dir, '.tmp-test-uuid-1234.json');
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.PREMIERE_TEMP_DIR = dir;
+    process.env.FALCONCUT_BRIDGE_DIR = dir;
     mockFs.mkdir.mockResolvedValue(undefined);
     mockFs.access.mockRejectedValue(new Error('Not found'));
     mockFs.writeFile.mockResolvedValue(undefined);
@@ -47,7 +47,7 @@ describe('bridge file-queue protocol', () => {
   });
 
   afterEach(() => {
-    delete process.env.PREMIERE_TEMP_DIR;
+    delete process.env.FALCONCUT_BRIDGE_DIR;
   });
 
   const readyBridge = async (): Promise<PremiereProBridge> => {

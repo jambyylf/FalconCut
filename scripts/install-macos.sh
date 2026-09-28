@@ -21,9 +21,9 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CEP_EXTENSIONS_DIR="$HOME/Library/Application Support/Adobe/CEP/extensions"
-CEP_TARGET_DIR="$CEP_EXTENSIONS_DIR/MCPBridgeCEP"
+CEP_TARGET_DIR="$CEP_EXTENSIONS_DIR/FalconCut"
 CLAUDE_CONFIG_PATH="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-TEMP_DIR="/tmp/premiere-mcp-bridge"
+TEMP_DIR="/tmp/falconcut-bridge"
 DIST_ENTRY="$REPO_ROOT/dist/index.js"
 
 if ! command -v node >/dev/null 2>&1; then
@@ -98,11 +98,11 @@ if (!data.mcpServers || typeof data.mcpServers !== "object" || Array.isArray(dat
   data.mcpServers = {};
 }
 
-data.mcpServers["premiere-pro"] = {
+data.mcpServers["falconcut"] = {
   command: "node",
   args: [distPath],
   env: {
-    PREMIERE_TEMP_DIR: tempPath
+    FALCONCUT_BRIDGE_DIR: tempPath
   }
 };
 
@@ -114,6 +114,6 @@ echo "Install complete."
 echo "Next:"
 echo "1. Restart Claude Desktop."
 echo "2. Restart Premiere Pro."
-echo "3. Open Window > Extensions > MCP Bridge (CEP)."
+echo "3. Open Window > Extensions > FalconCut."
 echo "4. Set Temp Directory to $TEMP_DIR."
 echo "5. Click Save Configuration, then Start Bridge, then Test Connection."

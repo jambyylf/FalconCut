@@ -1,10 +1,11 @@
 {
-  "name": "adobe-premiere-pro-mcp",
+  "name": "falconcut-mcp",
+  "private": true,
   "version": "1.2.8",
-  "description": "MCP Bridge for Adobe Premiere Pro with a searchable catalog of 280 Premiere tools.",
+  "description": "FalconCut: Kazakh-first MCP server for Adobe Premiere Pro with a searchable catalog of 280 Premiere tools.",
   "main": "dist/index.js",
   "bin": {
-    "premiere-pro-mcp": "dist/cli.js"
+    "falconcut-mcp": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -46,6 +47,8 @@
     "create:self-signed-zxp-cert": "node scripts/create-self-signed-zxp-cert.mjs"
   },
   "keywords": [
+    "falconcut",
+    "kazakh",
     "mcp",
     "model-context-protocol",
     "adobe-premiere-pro",
@@ -54,12 +57,19 @@
     "extendscript",
     "uxp"
   ],
-  "author": "hetpatel-11",
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
+  "author": "Zhambyl Bakytkeldi",
+  "contributors": [
+    "hetpatel-11 (original Adobe_Premiere_Pro_MCP)"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jambyylf/FalconCut.git"
   },
+  "homepage": "https://github.com/jambyylf/FalconCut#readme",
+  "bugs": {
+    "url": "https://github.com/jambyylf/FalconCut/issues"
+  },
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
     "fs-extra": "^11.2.0",
