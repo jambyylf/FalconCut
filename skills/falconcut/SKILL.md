@@ -75,7 +75,7 @@ After installing:
 1. Restart the MCP client if it reads config only at startup.
 2. Restart Premiere Pro.
 3. Open `Window > Extensions > FalconCut`. The bridge starts by itself.
-4. Confirm the panel's bridge folder matches the one above.
+4. Confirm the panel's `Уақытша папка` (temp folder) field matches the one above.
 5. Confirm the panel says Premiere is ready before running editing tools.
 
 If Premiere is not running, you can install/build/register the MCP, but tell the user that live verification needs Premiere and the FalconCut panel.
@@ -115,7 +115,7 @@ If commands time out or report bridge errors:
 2. Confirm `Window > Extensions > FalconCut` is open and the bridge is started.
 3. Confirm both sides use the same bridge folder.
 4. Run `falconcut-mcp --doctor`.
-5. Ask the user to click `Диагностика` (Run Diagnostics) in the panel.
+5. Ask the user to open the panel's `Қосымша` section and click `Диагностика` (Run Diagnostics).
 6. Read `falconcut-diagnostics-latest.json` in the bridge folder if it exists.
 7. Remove stale command/response files only if they are clearly old and the bridge is stopped or idle.
 

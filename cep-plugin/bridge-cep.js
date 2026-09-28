@@ -527,6 +527,7 @@
                         } catch (eWrite) {}
                     }
                 }
+                try { self.recordLastCommand(command, result); } catch (eUi) {}
                 // isProcessing stays true until the native evalScript callback
                 // (see executeExtendScript). Clearing it here on a JS timeout lets
                 // the poller start a second evalScript while the first is still
@@ -540,6 +541,7 @@
                 this.writeResponseAtomic(responseFile, { error: e.message, timestamp: new Date().toISOString() });
                 try { fs.unlinkSync(filePath); } catch (eUnlink) {}
             } catch (e2) {}
+            try { this.recordLastCommand(null, { success: false }); } catch (eUi) {}
             this.isProcessing = false;
         }
     };
@@ -741,6 +743,51 @@
         el.innerHTML = html;
     };
 
+    // FalconCut: «Соңғы команда» бөлімі — тек көрсету үшін. Құрал атын сервер команда
+    // файлының "tool" өрісіне жазады; нәтиже панельдің жауабынан және ExtendScript
+    // қайтарған { success: false } белгісінен анықталады.
+    MCPPremiereBridge.prototype.isSuccessfulResponse = function(response) {
+        if (!response || response.success === false || response.error) return false;
+        var payload = response.result;
+        return !(payload && typeof payload === 'object' && payload.success === false);
+    };
+
+    MCPPremiereBridge.prototype.recordLastCommand = function(command, response) {
+        this.lastCommand = {
+            tool: command && typeof command.tool === 'string' ? command.tool : '',
+            time: new Date(),
+            ok: this.isSuccessfulResponse(response)
+        };
+        this.renderLastCommand();
+    };
+
+    MCPPremiereBridge.prototype.renderLastCommand = function() {
+        if (typeof document === 'undefined') return;
+        var empty = document.getElementById('lastCommandEmpty');
+        var body = document.getElementById('lastCommandBody');
+        var last = this.lastCommand;
+        if (!empty || !body) return;
+        if (!last) {
+            empty.hidden = false;
+            body.hidden = true;
+            return;
+        }
+        empty.hidden = true;
+        body.hidden = false;
+        var toolEl = document.getElementById('lastCommandTool');
+        var timeEl = document.getElementById('lastCommandTime');
+        var resultEl = document.getElementById('lastCommandResult');
+        if (toolEl) toolEl.textContent = last.tool || t('panel.last.unknown_tool');
+        if (timeEl) {
+            var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+            timeEl.textContent = pad(last.time.getHours()) + ':' + pad(last.time.getMinutes()) + ':' + pad(last.time.getSeconds());
+        }
+        if (resultEl) {
+            resultEl.textContent = t(last.ok ? 'panel.last.success' : 'panel.last.error');
+            resultEl.className = 'result-badge ' + (last.ok ? 'success' : 'error');
+        }
+    };
+
     MCPPremiereBridge.prototype.loadConfig = function() {
         try {
             var panelConfigPath = getPanelConfigPath();
@@ -817,6 +864,7 @@
         this.updateUI();
         if (typeof this.premiereReady === 'boolean') this.updateServerStatus(this.premiereReady);
         this.updateCommandQueueUI();
+        this.renderLastCommand();
         this.log(t('panel.log.language_changed', t('meta.language_name')), 'info');
     };
 

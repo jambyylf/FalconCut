@@ -37,7 +37,7 @@ FalconCut is local software that lets AI assistants such as Claude Code, Claude 
 ```
 
 1. The AI client calls an MCP tool.
-2. The FalconCut server writes ExtendScript into the **bridge folder** (macOS: `/tmp/falconcut-bridge`, Windows: `%TEMP%\falconcut-bridge`).
+2. The FalconCut server writes ExtendScript into the **temp folder** (macOS: `/tmp/falconcut-bridge`, Windows: `%TEMP%\falconcut-bridge`).
 3. The FalconCut panel inside Premiere watches that folder and runs the script.
 4. The result travels back the same way.
 
@@ -119,7 +119,7 @@ claude mcp add falconcut --scope user -- falconcut-mcp
 claude mcp add falconcut --scope user -- cmd /c falconcut-mcp
 ```
 
-To use a different bridge folder, add an `env` block (and set the same folder in the panel):
+To use a different temp folder, add an `env` block (and set the same folder in the panel's «Уақытша папка» / Temp folder field):
 
 ```json
 "env": { "FALCONCUT_BRIDGE_DIR": "/some/other/path" }
@@ -135,7 +135,7 @@ The answer shows the Premiere version, the open project, and the active sequence
 
 ## Language
 
-- **Panel:** pick «Қазақша» or «English» in the **Language** list under Settings. The choice is saved to `~/.falconcut/config.json`, and the CLI and `--doctor` follow it.
+- **Panel:** pick «Қазақша» or «English» in the **Тіл** (Language) list inside the collapsed **Қосымша** (More) section. The choice is saved to `~/.falconcut/config.json`, and the CLI and `--doctor` follow it.
 - **CLI and `--doctor`:** `FALCONCUT_LANG=en falconcut-mcp --doctor` (Windows PowerShell: `$env:FALCONCUT_LANG='en'; falconcut-mcp --doctor`).
 - All user-facing text lives in [`locales/kk.json`](locales/kk.json) and [`locales/en.json`](locales/en.json).
 - MCP tool names and descriptions intentionally stay in English — they are read by the AI, not by people.
@@ -156,9 +156,9 @@ The answer shows the Premiere version, the open project, and the active sequence
 
 1. Run `falconcut-mcp --doctor` — it tells you what is missing.
 2. Check that Premiere is open with a project and that **Window > Extensions > FalconCut** is open.
-3. The panel's bridge folder must be `/tmp/falconcut-bridge` on macOS and `%TEMP%\falconcut-bridge` on Windows.
-4. After updating FalconCut, right-click the panel and choose **Reload**.
-5. The panel's **Run Diagnostics** button writes `falconcut-diagnostics-latest.json` into the bridge folder.
+3. The panel's Temp folder field must be `/tmp/falconcut-bridge` on macOS and `%TEMP%\falconcut-bridge` on Windows.
+4. After updating FalconCut, click **Қайта жүктеу** (Reload) in the panel.
+5. The **Диагностика** (Run Diagnostics) button in the **Қосымша** section writes `falconcut-diagnostics-latest.json` into the temp folder.
 
 ## Updating
 

@@ -16,12 +16,12 @@ falconcut-mcp --doctor
 
 1. Premiere Pro-ны қайта іске қосыңыз.
 2. **Window > Extensions > FalconCut** мәзірін ашыңыз. Көпір өзі қосылады.
-3. «Көпір папкасы» өрісінде `/tmp/falconcut-bridge` тұрғанын тексеріңіз.
+3. «Уақытша папка» өрісінде `/tmp/falconcut-bridge` тұрғанын тексеріңіз.
 4. Панель көрінбесе: **Premiere Pro > Settings > Plugins** ішінде **Enable developer mode** белгісін қосып, Premiere-ді қайта іске қосыңыз.
 
    ![Premiere Pro-да developer mode қосу](images/uxp-developer-mode.png)
 
-5. Ақау болса, панельдегі **Диагностика** батырмасын басыңыз — есеп `/tmp/falconcut-bridge/falconcut-diagnostics-latest.json` файлына жазылады.
+5. Ақау болса, панельдің **Қосымша** бөліміндегі **Диагностика** батырмасын басыңыз — есеп `/tmp/falconcut-bridge/falconcut-diagnostics-latest.json` файлына жазылады.
 
 Содан кейін Claude-ты қайта іске қосып, сұраңыз:
 
@@ -43,7 +43,7 @@ falconcut-mcp --doctor
 
 1. Premiere Pro-ны қайта іске қосыңыз.
 2. **Window > Extensions > FalconCut** мәзірін ашыңыз.
-3. «Көпір папкасы» өрісінде `%TEMP%\falconcut-bridge` жолы (мысалы, `C:\Users\<атыңыз>\AppData\Local\Temp\falconcut-bridge`) тұрғанын тексеріңіз.
+3. «Уақытша папка» өрісінде `%TEMP%\falconcut-bridge` жолы (мысалы, `C:\Users\<атыңыз>\AppData\Local\Temp\falconcut-bridge`) тұрғанын тексеріңіз.
 
 Windows орнатушысы VS Code (GitHub Copilot) мен Claude Desktop баптауларына `falconcut` жазбасын қосады. Оларды қоспау үшін: `npm run setup:win -- -SkipCopilotConfig -SkipClaudeDesktopConfig`.
 
@@ -71,7 +71,7 @@ codex mcp add falconcut -- falconcut-mcp
 falconcut-mcp --doctor
 ```
 
-`--doctor` Node.js-ті, сервер жинағын, FalconCut панелін, көпір папкасын, Adobe CEP debug режимін, MCP клиент баптауларын және панельдің қазір Premiere-де жұмыс істеп тұрғанын тексереді. Ағылшынша нәтиже үшін: `FALCONCUT_LANG=en falconcut-mcp --doctor`.
+`--doctor` Node.js-ті, сервер жинағын, FalconCut панелін, уақытша папканы, Adobe CEP debug режимін, MCP клиент баптауларын және панельдің қазір Premiere-де жұмыс істеп тұрғанын тексереді. Ағылшынша нәтиже үшін: `FALCONCUT_LANG=en falconcut-mcp --doctor`.
 
 Нақты Premiere-мен толық тексеріс үшін (жаңа, бос жобада):
 
@@ -88,8 +88,8 @@ node scripts/live-tool-sweep.mjs
 - Premiere ашылмаған
 - жоба ашылмаған
 - FalconCut панелі ашылмаған немесе көпір тоқтатылған
-- панельдегі көпір папкасы MCP клиентіндегі жолмен сәйкес емес
-- FalconCut жаңартылғаннан кейін панельді **Reload** жасау керек
+- панельдегі «Уақытша папка» MCP клиентіндегі жолмен сәйкес емес
+- FalconCut жаңартылғаннан кейін панельдегі **Қайта жүктеу** батырмасын басу керек
 
 ### Claude Code-та `falconcut` қосылмайды
 

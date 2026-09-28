@@ -13,6 +13,7 @@ import { promises as fs } from 'fs';
 import { extname, join, posix as pathPosix, win32 as pathWin32 } from 'path';
 import { validateFilePath } from '../utils/security.js';
 import { bridgeDir } from '../brand.js';
+import { currentToolName } from './tool-context.js';
 import type { EnsureHostOptions, EnsureHostResult, PremiereProTransport } from './types.js';
 
 const execFileAsync = promisify(execFile);
@@ -1183,11 +1184,14 @@ export class PremiereProBridge implements PremiereProTransport {
       //
       // The scratch name must not itself look like a command to the panel, which matches on
       // a "command-" prefix; a leading dot keeps it out of that test.
+      // FalconCut: "tool" — панельдің «Соңғы команда» бөліміне арналған, тек көрсету үшін
+      const tool = currentToolName();
       await fs.writeFile(commandStaging, JSON.stringify({
         id: commandId,
         script: fullScript,
         timeoutMs: timeoutMs,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ...(tool ? { tool } : {})
       }));
       await fs.rename(commandStaging, commandFile);
 

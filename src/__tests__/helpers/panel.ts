@@ -60,7 +60,12 @@ function nodeStub(name: string, fsStub: Record<string, unknown>): unknown {
   return {};
 }
 
-export function loadPanel(): LoadedPanel {
+/** FalconCut: document-ті ауыстыруға болады (мысалы, «Соңғы команда» элементтерін тексеру үшін). */
+export interface LoadPanelOptions {
+  document?: Record<string, unknown>;
+}
+
+export function loadPanel(options: LoadPanelOptions = {}): LoadedPanel {
   const source = realFs.readFileSync(PANEL_PATH, 'utf8');
   let handed = '';
   const fsStub = {
@@ -71,7 +76,7 @@ export function loadPanel(): LoadedPanel {
 
   const sandbox: Record<string, unknown> = {
     window: {} as Record<string, unknown>,
-    document: { addEventListener() {}, getElementById: () => null, readyState: 'complete' },
+    document: options.document ?? { addEventListener() {}, getElementById: () => null, readyState: 'complete' },
     navigator: { userAgent: 'test' },
     setTimeout: (fn: (...args: unknown[]) => void, ms?: number) => setTimeout(fn, ms) as unknown as number,
     clearTimeout: (id: number) => clearTimeout(id),

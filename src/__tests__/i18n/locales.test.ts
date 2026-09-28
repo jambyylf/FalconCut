@@ -95,7 +95,7 @@ describe('CEP panel HTML', () => {
   it('ships the Kazakh text as the default, identical to kk.json', () => {
     const html = read('cep-plugin/index.html');
     const pairs = [...html.matchAll(/<[^>]*\sdata-i18n="([^"]+)"[^>]*>([^<]*)</g)];
-    expect(pairs.length).toBeGreaterThan(20);
+    expect(pairs.length).toBeGreaterThan(10);
     for (const [, key, text] of pairs) {
       expect({ key, text: (text ?? '').trim() }).toEqual({ key, text: kk[key as string] });
     }

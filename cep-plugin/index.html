@@ -5,23 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FalconCut</title>
     <style>
+        /*
+         * FalconCut панелі: қараңғы фон, жұқа тор, күлгін жарқыл және «шыны» карточкалар.
+         * Бұл файл тек көріністі сипаттайды. bridge-cep.js күтетін id және onclick
+         * атаулары (startButton, connectionText, tempDirectory, logContainer ...) сақталған.
+         */
+
+        /* Қаріп желіден емес, панельдің қасындағы файлдан жүктеледі (қазақ әріптері бар) */
+        @font-face {
+            font-family: "Montserrat";
+            src: url("fonts/Montserrat-Kazakh.woff2") format("woff2");
+            font-weight: 400 800;
+            font-style: normal;
+        }
+
         :root {
-            --bg-0: #0b1218;
-            --bg-1: #121c25;
-            --panel: rgba(20, 31, 41, 0.86);
-            --panel-border: rgba(129, 170, 197, 0.18);
-            --panel-shadow: 0 18px 40px rgba(1, 10, 18, 0.48);
-            --text-0: #f4f8fb;
-            --text-1: #9cb2c3;
-            --text-2: #6e8393;
-            --accent: #5fd3ff;
-            --accent-strong: #11aef0;
-            --accent-soft: rgba(95, 211, 255, 0.16);
-            --success: #61e8a6;
-            --warn: #ffd76b;
-            --error: #ff7b7b;
-            --input: rgba(9, 17, 25, 0.72);
-            --button-dark: rgba(13, 23, 32, 0.72);
+            --bg: #08080E;
+            --violet: #A855F7;
+            --lilac: #C4B5FD;
+            --cyan: #22D3EE;
+            --accent: linear-gradient(135deg, #A855F7 0%, #C4B5FD 55%, #22D3EE 100%);
+            --grid-line: rgba(168, 85, 247, 0.07);
+            --glow: rgba(168, 85, 247, 0.32);
+            --text: #ECE9F5;
+            --text-muted: #A9A4BC;
+            --text-faint: #6F6A84;
+            --glass: rgba(22, 17, 38, 0.58);
+            --glass-strong: rgba(30, 22, 52, 0.72);
+            --glass-border: rgba(168, 85, 247, 0.26);
+            --glass-border-strong: rgba(196, 181, 253, 0.5);
+            --field: rgba(6, 6, 12, 0.78);
+            --success: #22C55E;
+            --error: #F43F5E;
+            --warning: #FBBF24;
+            --idle: #6B7280;
+            --mono: "SF Mono", SFMono-Regular, Menlo, Consolas, "Cascadia Mono", "Liberation Mono", monospace;
         }
 
         * {
@@ -35,416 +53,397 @@
         }
 
         body {
-            font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
-            color: var(--text-0);
-            padding: 16px;
-            background:
-                radial-gradient(circle at top right, rgba(17, 174, 240, 0.2), transparent 34%),
-                radial-gradient(circle at top left, rgba(97, 232, 166, 0.14), transparent 28%),
-                linear-gradient(165deg, var(--bg-0), var(--bg-1));
+            position: relative;
+            padding: 14px 12px 18px;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: "Montserrat", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.45;
+            -webkit-font-smoothing: antialiased;
         }
 
+        /* Жұқа тор: жоғарыда анық, төмен қарай біртіндеп жоғалады */
         body::before {
             content: "";
             position: fixed;
-            inset: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
             pointer-events: none;
             background-image:
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 22px 22px;
-            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent 70%);
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 20px 20px;
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 75%);
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 75%);
         }
 
+        /* Жоғарғы оң бұрыштағы күлгін жұмсақ жарқыл */
+        body::after {
+            content: "";
+            position: fixed;
+            top: -140px;
+            right: -120px;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            pointer-events: none;
+            background: radial-gradient(circle, var(--glow) 0%, rgba(168, 85, 247, 0.08) 45%, transparent 70%);
+        }
+
+        /* flex gap ескі CEP (Chromium 74) нұсқаларында жоқ, сондықтан grid қолданылады */
         .shell {
-            max-width: 460px;
-            margin: 0 auto;
             position: relative;
             z-index: 1;
-        }
-
-        .hero {
-            position: relative;
-            overflow: hidden;
-            border: 1px solid var(--panel-border);
-            border-radius: 20px;
-            padding: 18px 18px 16px;
-            margin-bottom: 14px;
-            background:
-                linear-gradient(135deg, rgba(95, 211, 255, 0.14), rgba(97, 232, 166, 0.06) 42%, rgba(7, 15, 22, 0.9) 82%),
-                var(--panel);
-            box-shadow: var(--panel-shadow);
-        }
-
-        .hero::after {
-            content: "";
-            position: absolute;
-            width: 140px;
-            height: 140px;
-            border-radius: 999px;
-            right: -32px;
-            top: -46px;
-            background: radial-gradient(circle, rgba(95, 211, 255, 0.34), transparent 70%);
-            pointer-events: none;
-        }
-
-        .eyebrow {
-            display: inline-block;
-            font-size: 11px;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--accent);
-            margin-bottom: 10px;
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 24px;
-            line-height: 1.05;
-            letter-spacing: -0.02em;
-        }
-
-        .hero-copy {
-            margin-top: 8px;
-            color: var(--text-1);
-            font-size: 12px;
-            line-height: 1.55;
-            max-width: 330px;
-        }
-
-        .hero-meta {
-            margin-top: 14px;
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
+            grid-template-columns: minmax(0, 1fr);
+            row-gap: 10px;
+            max-width: 520px;
+            margin: 0 auto;
         }
 
-        .meta-card {
-            border: 1px solid rgba(129, 170, 197, 0.14);
-            border-radius: 14px;
-            padding: 10px 11px;
-            background: rgba(7, 15, 22, 0.36);
-        }
-
-        .meta-label {
-            display: block;
-            font-size: 10px;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--text-2);
-            margin-bottom: 4px;
-        }
-
-        .meta-value {
-            display: block;
-            font-size: 12px;
-            color: var(--text-0);
-            font-weight: 600;
-        }
-
-        .panel {
-            border: 1px solid var(--panel-border);
-            border-radius: 18px;
-            padding: 15px;
-            margin-bottom: 12px;
-            background: var(--panel);
-            box-shadow: var(--panel-shadow);
-            backdrop-filter: blur(8px);
-        }
-
-        .panel-title {
+        /* ---- Жоғарғы бөлік: логотип және күй ---- */
+        .brand {
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
+            padding: 2px 2px 6px;
         }
 
-        .panel-title h2 {
+        .logo {
             margin: 0;
-            font-size: 13px;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            background: var(--accent);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .logo-sub {
+            margin-top: 3px;
+            font-size: 9px;
             font-weight: 700;
-            color: var(--text-1);
+            letter-spacing: 0.42em;
+            color: var(--lilac);
+            opacity: 0.75;
         }
 
-        .panel-title span {
-            font-size: 11px;
-            color: var(--text-2);
+        .logo-sub #panelVersion {
+            margin-left: 4px;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+            color: var(--text-faint);
         }
 
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
-        }
-
-        .status-card {
-            min-height: 82px;
-            padding: 12px;
-            border-radius: 16px;
-            border: 1px solid rgba(129, 170, 197, 0.12);
-            background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 58%),
-                rgba(9, 17, 25, 0.56);
-        }
-
-        .status-caption {
-            font-size: 10px;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--text-2);
-            margin-bottom: 10px;
-        }
-
-        .status-indicator {
-            display: flex;
+        .status-pill {
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
+            flex: 0 0 auto;
+            margin-left: 10px;
+            padding: 6px 11px 6px 9px;
+            border-radius: 999px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
         }
 
         .status-dot {
-            width: 12px;
-            height: 12px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             flex: 0 0 auto;
-            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.04);
+            margin-right: 7px;
         }
 
         .status-dot.connected {
             background: var(--success);
-            box-shadow: 0 0 0 4px rgba(97, 232, 166, 0.12), 0 0 14px rgba(97, 232, 166, 0.35);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18), 0 0 10px rgba(34, 197, 94, 0.6);
         }
 
         .status-dot.disconnected {
-            background: var(--error);
-            box-shadow: 0 0 0 4px rgba(255, 123, 123, 0.12), 0 0 14px rgba(255, 123, 123, 0.28);
+            background: var(--idle);
+            box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.18);
         }
 
-        .status-text {
-            display: block;
-            font-size: 13px;
-            line-height: 1.35;
-            color: var(--text-0);
+        /* ---- «Шыны» карточкалар ---- */
+        .card {
+            padding: 12px;
+            border-radius: 14px;
+            border: 1px solid var(--glass-border);
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 40%),
+                var(--glass);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 10px 26px rgba(0, 0, 0, 0.42);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
         }
 
-        .config-copy,
-        .micro-copy {
-            font-size: 11px;
-            line-height: 1.55;
-            color: var(--text-2);
-            margin-bottom: 10px;
-        }
-
-        label {
-            display: block;
+        .card-title {
+            margin: 0 0 9px;
             font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--lilac);
+        }
+
+        /* ---- Батырмалар ---- */
+        .actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            row-gap: 8px;
+        }
+
+        .actions-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            column-gap: 8px;
+        }
+
+        .btn {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            padding: 10px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: rgba(168, 85, 247, 0.08);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.2;
+            cursor: pointer;
+            transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+        }
+
+        .btn:hover:enabled {
+            border-color: var(--glass-border-strong);
+            background: rgba(168, 85, 247, 0.16);
+        }
+
+        .btn:active:enabled {
+            transform: translateY(1px);
+        }
+
+        .btn.primary {
+            border: 0;
+            background: var(--accent);
+            color: #0B0816;
+            font-weight: 700;
+            box-shadow: 0 8px 22px rgba(168, 85, 247, 0.3);
+        }
+
+        .btn.primary:hover:enabled {
+            background: var(--accent);
+            box-shadow: 0 8px 26px rgba(34, 211, 238, 0.28);
+        }
+
+        .btn:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+        }
+
+        .btn:focus-visible,
+        .field:focus-visible,
+        summary:focus-visible {
+            outline: 2px solid var(--cyan);
+            outline-offset: 2px;
+        }
+
+        /* ---- Өрістер ---- */
+        .field-label {
+            display: block;
+            margin: 12px 0 6px;
+            font-size: 10px;
+            font-weight: 700;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: var(--text-2);
-            margin-bottom: 8px;
+            color: var(--text-muted);
         }
 
-        input[type="text"] {
+        .field {
             width: 100%;
-            padding: 12px 13px;
-            border: 1px solid rgba(129, 170, 197, 0.14);
-            border-radius: 12px;
-            background: var(--input);
-            color: var(--text-0);
-            font-size: 13px;
+            padding: 9px 11px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: var(--field);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 11px;
             outline: none;
-            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
-        input[type="text"]:focus {
-            border-color: rgba(95, 211, 255, 0.48);
-            box-shadow: 0 0 0 3px rgba(95, 211, 255, 0.1);
+        .field::placeholder {
+            color: var(--text-faint);
         }
 
-        /* FalconCut: тіл таңдау тізімі мәтін өрісімен бірдей көрінеді */
-        select {
-            width: 100%;
-            padding: 11px 12px;
-            border: 1px solid rgba(129, 170, 197, 0.14);
-            border-radius: 12px;
-            background: var(--input);
-            color: var(--text-0);
-            font-size: 13px;
-            outline: none;
+        .field:focus {
+            border-color: var(--violet);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
         }
 
-        select:focus {
-            border-color: rgba(95, 211, 255, 0.48);
-        }
-
-        label.field-gap {
-            margin-top: 14px;
-        }
-
-        .button-row,
-        .button-grid {
-            display: grid;
-            gap: 10px;
-        }
-
-        .button-row {
-            grid-template-columns: 1fr;
-            margin-top: 10px;
-        }
-
-        .button-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        button {
-            appearance: none;
-            border: 0;
-            border-radius: 12px;
-            padding: 12px 14px;
+        select.field {
+            font-family: inherit;
             font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.03em;
-            color: var(--text-0);
-            cursor: pointer;
-            transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, opacity 0.16s ease;
-            background: var(--button-dark);
-            box-shadow: inset 0 0 0 1px rgba(129, 170, 197, 0.14);
         }
 
-        button:hover:enabled {
-            transform: translateY(-1px);
+        select.field option {
+            background: #120F1F;
+            color: var(--text);
         }
 
-        button:disabled {
-            cursor: not-allowed;
-            opacity: 0.4;
+        /* ---- Соңғы команда ---- */
+        .last-empty {
+            color: var(--text-faint);
+            font-size: 11px;
         }
 
-        .primary {
-            background:
-                linear-gradient(135deg, var(--accent), var(--accent-strong));
-            color: #081119;
-            box-shadow:
-                inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-                0 10px 20px rgba(17, 174, 240, 0.28);
-        }
-
-        .secondary {
-            background:
-                linear-gradient(135deg, rgba(97, 232, 166, 0.16), rgba(17, 174, 240, 0.08)),
-                var(--button-dark);
-        }
-
-        button.utility {
-            background: rgba(8, 17, 26, 0.92);
-        }
-
-        .command-queue,
-        .log-container {
-            border-radius: 14px;
-            border: 1px solid rgba(129, 170, 197, 0.1);
-            background: rgba(8, 15, 22, 0.82);
-            padding: 8px;
-        }
-
-        .command-queue {
-            max-height: 164px;
-            overflow-y: auto;
-        }
-
-        .command-item {
+        .last-main {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
-            padding: 10px 11px;
-            margin-bottom: 6px;
-            border-radius: 12px;
-            background: rgba(16, 26, 35, 0.72);
         }
 
-        .command-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .command-label {
-            flex: 1 1 auto;
+        .last-tool {
+            margin-right: 8px;
             min-width: 0;
-            color: var(--text-1);
-            font-size: 12px;
-            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--lilac);
         }
 
-        .command-status {
-            padding: 4px 8px;
+        .last-time {
+            margin-top: 4px;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-faint);
+        }
+
+        .result-badge {
+            flex: 0 0 auto;
+            padding: 3px 9px;
             border-radius: 999px;
             font-size: 10px;
             font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
-        .command-status.pending {
-            background: rgba(255, 215, 107, 0.14);
-            color: var(--warn);
-        }
-
-        .command-status.executing {
-            background: var(--accent-soft);
-            color: var(--accent);
-        }
-
-        .command-status.completed {
-            background: rgba(97, 232, 166, 0.14);
+        .result-badge.success {
             color: var(--success);
+            background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.35);
         }
 
-        .log-container {
-            max-height: 220px;
+        .result-badge.error {
+            color: var(--error);
+            background: rgba(244, 63, 94, 0.12);
+            border: 1px solid rgba(244, 63, 94, 0.38);
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        /* ---- Журнал: айналатын терезе, моноширинді шрифт ---- */
+        .log {
+            height: 210px;
             overflow-y: auto;
+            padding: 8px 9px;
+            border-radius: 10px;
+            border: 1px solid rgba(168, 85, 247, 0.16);
+            background: rgba(4, 4, 9, 0.82);
+            font-family: var(--mono);
+            font-size: 10.5px;
+            line-height: 1.55;
         }
 
         .log-entry {
-            font-size: 11px;
-            line-height: 1.5;
-            margin-bottom: 7px;
-            padding: 8px 10px;
-            border-radius: 10px;
-            color: var(--text-1);
-            background: rgba(15, 24, 33, 0.5);
+            padding: 1px 0 1px 8px;
+            margin-bottom: 3px;
+            border-left: 2px solid rgba(168, 85, 247, 0.45);
+            color: var(--text-muted);
+            white-space: pre-wrap;
             word-break: break-word;
         }
 
-        .log-entry:last-child {
-            margin-bottom: 0;
-        }
-
-        .log-entry.info {
-            border-left: 3px solid rgba(95, 211, 255, 0.6);
-        }
-
         .log-entry.warning {
-            border-left: 3px solid rgba(255, 215, 107, 0.75);
-            color: #f4d889;
+            border-left-color: var(--warning);
+            color: #F4D98B;
         }
 
         .log-entry.error {
-            border-left: 3px solid rgba(255, 123, 123, 0.8);
-            color: #ffadad;
+            border-left-color: var(--error);
+            color: #FDA4B4;
         }
 
-        .footer-note {
-            text-align: center;
-            color: var(--text-2);
-            font-size: 10px;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
-            padding: 4px 0 2px;
+        .log::-webkit-scrollbar {
+            width: 6px;
         }
+
+        .log::-webkit-scrollbar-thumb {
+            border-radius: 6px;
+            background: rgba(168, 85, 247, 0.35);
+        }
+
+        .log::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        /* ---- Қосымша (әдепкіде жабық) ---- */
+        details.more summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            list-style: none;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        details.more summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details.more summary::after {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-right: 2px solid var(--lilac);
+            border-bottom: 2px solid var(--lilac);
+            transform: rotate(45deg);
+            transition: transform 0.15s ease;
+        }
+
+        details.more[open] summary::after {
+            transform: rotate(-135deg);
+        }
+
+        details.more .field-label:first-of-type {
+            margin-top: 12px;
+        }
+
+        details.more .actions-row {
+            margin-top: 10px;
+        }
+
     </style>
 </head>
 <body>
@@ -454,102 +453,58 @@
         табылмаған жағдайға арналған әдепкі нұсқа, ол kk.json-мен бірдей болуы керек.
     -->
     <div class="shell">
-        <section class="hero">
-            <div class="eyebrow" data-i18n="panel.eyebrow">Premiere автоматтандыру</div>
-            <h1>FalconCut</h1>
-            <div class="hero-copy" data-i18n="panel.hero">Premiere Pro мен Claude, Codex немесе басқа MCP клиенті арасындағы нақты уақыттағы файл көпірі. Панель ашылғанда көпір өзі қосылады, содан кейін панель командаларды Premiere Pro ішінде орындайды.</div>
-            <div class="hero-meta">
-                <div class="meta-card">
-                    <span class="meta-label" data-i18n="panel.meta.mode">Режим</span>
-                    <span class="meta-value" data-i18n="panel.meta.mode_value">CEP ортасы</span>
+        <header class="brand">
+            <div>
+                <h1 class="logo">FalconCut</h1>
+                <div class="logo-sub">ONAIR<span id="panelVersion"></span></div>
+            </div>
+            <div class="status-pill" role="status" aria-live="polite">
+                <span class="status-dot disconnected" id="connectionStatus"></span>
+                <span id="connectionText" data-i18n="panel.status.disconnected">Ажыратылған</span>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="actions">
+                <button class="btn primary" type="button" onclick="startBridge()" id="startButton" data-i18n="panel.controls.start">Көпірді іске қосу</button>
+                <div class="actions-row">
+                    <button class="btn" type="button" onclick="stopBridge()" id="stopButton" disabled data-i18n="panel.controls.stop">Көпірді тоқтату</button>
+                    <button class="btn" type="button" onclick="location.reload()" id="reloadButton" data-i18n="panel.controls.reload">Қайта жүктеу</button>
                 </div>
-                <div class="meta-card">
-                    <span class="meta-label" data-i18n="panel.meta.path">Жол</span>
-                    <span class="meta-value" data-i18n="panel.meta.path_value">Жергілікті папка</span>
+            </div>
+            <label class="field-label" for="tempDirectory" data-i18n="panel.config.temp_label">Уақытша папка</label>
+            <input class="field" type="text" id="tempDirectory" spellcheck="false" onchange="saveConfig()" data-i18n-placeholder="panel.config.temp_placeholder" placeholder="Уақытша папка">
+        </section>
+
+        <section class="card">
+            <h2 class="card-title" data-i18n="panel.last.title">Соңғы команда</h2>
+            <div class="last-empty" id="lastCommandEmpty" data-i18n="panel.last.empty">Әзірге команда болған жоқ</div>
+            <div id="lastCommandBody" hidden>
+                <div class="last-main">
+                    <span class="last-tool" id="lastCommandTool"></span>
+                    <span class="result-badge" id="lastCommandResult"></span>
                 </div>
-                <div class="meta-card">
-                    <span class="meta-label" data-i18n="panel.meta.control">Басқару</span>
-                    <span class="meta-value" data-i18n="panel.meta.control_value">Тікелей кезек</span>
-                </div>
+                <div class="last-time" id="lastCommandTime"></div>
             </div>
         </section>
 
-        <section class="panel">
-            <div class="panel-title">
-                <h2 data-i18n="panel.status.title">Күй</h2>
-                <span data-i18n="panel.status.subtitle">Көпір мен Premiere тексерісі</span>
-            </div>
-            <div class="status-grid">
-                <div class="status-card">
-                    <div class="status-caption" data-i18n="panel.status.bridge">Көпір</div>
-                    <div class="status-indicator">
-                        <div class="status-dot disconnected" id="connectionStatus"></div>
-                        <span class="status-text" id="connectionText" data-i18n="panel.status.disconnected">Ажыратылған</span>
-                    </div>
-                </div>
-                <div class="status-card">
-                    <div class="status-caption" data-i18n="panel.status.premiere">Premiere</div>
-                    <div class="status-indicator">
-                        <div class="status-dot disconnected" id="serverStatus"></div>
-                        <span class="status-text" id="serverText" data-i18n="panel.status.waiting_premiere">Premiere күтілуде</span>
-                    </div>
-                </div>
-            </div>
+        <section class="card">
+            <h2 class="card-title" data-i18n="panel.log.title">Журнал</h2>
+            <div class="log" id="logContainer" role="log" aria-live="polite"></div>
         </section>
 
-        <section class="panel">
-            <div class="panel-title">
-                <h2 data-i18n="panel.config.title">Баптаулар</h2>
-                <span data-i18n="panel.config.subtitle">Ортақ көпір папкасы</span>
-            </div>
-            <div class="config-copy" data-i18n="panel.config.help">Бұл жол MCP клиентіңіздегі FALCONCUT_BRIDGE_DIR мәнімен бірдей болуы керек. Оны сол жақта өзгертпеген болсаңыз, әдепкі мәнді қалдырыңыз.</div>
-            <label for="tempDirectory" data-i18n="panel.config.temp_label">Көпір папкасы</label>
-            <input type="text" id="tempDirectory" data-i18n-placeholder="panel.config.temp_placeholder" placeholder="Көпір папкасы">
-            <label for="languageSelect" class="field-gap" data-i18n="panel.config.language_label">Тіл</label>
-            <select id="languageSelect" onchange="changeLanguage(this.value)">
+        <details class="card more">
+            <summary data-i18n="panel.more.title">Қосымша</summary>
+            <label class="field-label" for="languageSelect" data-i18n="panel.config.language_label">Тіл</label>
+            <select class="field" id="languageSelect" onchange="changeLanguage(this.value)">
                 <option value="kk">Қазақша</option>
                 <option value="en">English</option>
             </select>
-            <div class="button-row">
-                <button class="primary" onclick="saveConfig()" data-i18n="panel.config.save">Баптауларды сақтау</button>
+            <div class="actions-row">
+                <button class="btn" type="button" onclick="runDiagnostics()" id="diagnosticsButton" data-i18n="panel.controls.diagnostics">Диагностика</button>
+                <button class="btn" type="button" onclick="clearLog()" id="clearButton" data-i18n="panel.controls.clear_log">Журналды тазалау</button>
             </div>
-        </section>
-
-        <section class="panel">
-            <div class="panel-title">
-                <h2 data-i18n="panel.controls.title">Басқару</h2>
-                <span data-i18n="panel.controls.subtitle">Қосу, тоқтату, тексеру</span>
-            </div>
-            <div class="button-grid">
-                <button class="primary" onclick="startBridge()" id="startButton" data-i18n="panel.controls.start">Көпірді қосу</button>
-                <button class="secondary" onclick="stopBridge()" id="stopButton" disabled data-i18n="panel.controls.stop">Көпірді тоқтату</button>
-                <button class="secondary" onclick="runDiagnostics()" id="diagnosticsButton" data-i18n="panel.controls.diagnostics">Диагностика</button>
-                <button class="utility" onclick="clearLog()" id="clearButton" data-i18n="panel.controls.clear_log">Журналды тазалау</button>
-            </div>
-            <div class="micro-copy" style="margin-top: 10px; margin-bottom: 0;" data-i18n="panel.controls.help">Панель ашылғанда көпір автоматты түрде қосылады, «Көпірді тоқтату» оны уақытша тоқтатады. FalconCut жаңартылғаннан кейін Premiere ескі кодты орындамауы үшін панельді тінтуірдің оң жақ батырмасымен басып, Reload таңдаңыз.</div>
-        </section>
-
-        <section class="panel">
-            <div class="panel-title">
-                <h2 data-i18n="panel.queue.title">Командалар кезегі</h2>
-                <span data-i18n="panel.queue.subtitle">Соңғы тапсырмалар</span>
-            </div>
-            <div class="command-queue" id="commandQueue">
-                <div class="command-item">
-                    <span class="command-label" data-i18n="panel.queue.empty">Кезекте команда жоқ</span>
-                </div>
-            </div>
-        </section>
-
-        <section class="panel">
-            <div class="panel-title">
-                <h2 data-i18n="panel.log.title">Әрекеттер журналы</h2>
-                <span data-i18n="panel.log.subtitle">Соңғы хабарламалар</span>
-            </div>
-            <div class="log-container" id="logContainer"></div>
-        </section>
-
-        <div class="footer-note"><span data-i18n="panel.footer">FalconCut · CEP панелі</span> <span id="panelVersion"></span></div>
+        </details>
     </div>
 
     <script src="CSInterface.js"></script>

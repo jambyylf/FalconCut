@@ -11,6 +11,7 @@ import { Logger } from './utils/logger.js';
 import { PACKAGE_VERSION } from './version.js';
 import { MCP_SERVER_INSTRUCTIONS } from './instructions.js';
 import { MCP_SERVER_NAME } from './brand.js';
+import { runWithToolName } from './bridge/tool-context.js';
 
 type ObjectJsonSchema = Record<string, unknown> & { type: 'object' };
 
@@ -74,9 +75,14 @@ class MCPPremiereProServer {
     // Execute tool calls
     server.setRequestHandler('tools/call', async (request) => {
       const { name, arguments: args } = request.params;
+      // invoke_tool арқылы шақырылса, панельге ішкі құралдың атын көрсетеміз
+      const panelToolName =
+        name === 'invoke_tool' && args && typeof (args as { name?: unknown }).name === 'string'
+          ? String((args as { name: string }).name)
+          : name;
 
       try {
-        const result = await this.tools.executeTool(name, args || {});
+        const result = await runWithToolName(panelToolName, () => this.tools.executeTool(name, args || {}));
         const toolResult: CallToolResult = {
           content: [
             {
@@ -115,7 +121,7 @@ class MCPPremiereProServer {
         if (!resource) {
           throw new Error(`Resource '${uri}' not found`);
         }
-        const content = await this.resources.readResource(uri);
+        const content = await runWithToolName(uri, () => this.resources.readResource(uri));
         const text = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
         return {
           contents: [

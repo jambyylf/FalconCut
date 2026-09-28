@@ -37,7 +37,7 @@ FalconCut — Claude Code, Claude Desktop, Codex сияқты AI көмекші�
 ```
 
 1. AI клиенті MCP құралын шақырады.
-2. FalconCut сервері ExtendScript жазып, оны **көпір папкасына** салады (macOS: `/tmp/falconcut-bridge`, Windows: `%TEMP%\falconcut-bridge`).
+2. FalconCut сервері ExtendScript жазып, оны **уақытша папкаға** салады (macOS: `/tmp/falconcut-bridge`, Windows: `%TEMP%\falconcut-bridge`).
 3. Premiere ішіндегі FalconCut панелі папканы бақылап, скриптті орындайды.
 4. Нәтиже сол жолмен AI-ға қайтады.
 
@@ -119,7 +119,7 @@ claude mcp add falconcut --scope user -- falconcut-mcp
 claude mcp add falconcut --scope user -- cmd /c falconcut-mcp
 ```
 
-Көпір папкасын өзгерту қажет болса, `env` бөлімін қосыңыз (панельдегі «Көпір папкасы» да дәл сондай болуы керек):
+Уақытша папканы өзгерту қажет болса, `env` бөлімін қосыңыз (панельдегі «Уақытша папка» өрісі де дәл сондай болуы керек):
 
 ```json
 "env": { "FALCONCUT_BRIDGE_DIR": "/басқа/жол" }
@@ -143,7 +143,7 @@ Premiere ашық, FalconCut панелі ашық тұрғанда AI-ға жа
 
 ## Тіл
 
-- **Панель:** «Баптаулар» бөліміндегі **Тіл** тізімінен «Қазақша» немесе «English» таңдаңыз. Таңдау `~/.falconcut/config.json` файлына сақталады, CLI мен `--doctor` да соны қолданады.
+- **Панель:** төменгі **Қосымша** бөліміндегі **Тіл** тізімінен «Қазақша» немесе «English» таңдаңыз. Таңдау `~/.falconcut/config.json` файлына сақталады, CLI мен `--doctor` да соны қолданады.
 - **CLI және `--doctor`:** бір рет ағылшынша көру үшін `FALCONCUT_LANG=en falconcut-mcp --doctor` (Windows PowerShell: `$env:FALCONCUT_LANG='en'; falconcut-mcp --doctor`).
 - Барлық мәтін [`locales/kk.json`](locales/kk.json) және [`locales/en.json`](locales/en.json) файлдарында.
 - MCP құралдарының аттары мен сипаттамалары әдейі ағылшынша қалдырылған — оларды адам емес, AI оқиды.
@@ -164,9 +164,9 @@ Premiere ашық, FalconCut панелі ашық тұрғанда AI-ға жа
 
 1. `falconcut-mcp --doctor` іске қосыңыз — ол не жетіспейтінін қазақша айтады.
 2. Premiere ашық па, жоба ашық па, **Window > Extensions > FalconCut** панелі ашық па — тексеріңіз.
-3. Панельдегі «Көпір папкасы» macOS-та `/tmp/falconcut-bridge`, Windows-та `%TEMP%\falconcut-bridge` болуы керек.
-4. FalconCut жаңартылғаннан кейін панельді тінтуірдің оң жақ батырмасымен басып, **Reload** таңдаңыз.
-5. Панельдегі **Диагностика** батырмасы көпір папкасына `falconcut-diagnostics-latest.json` есебін жазады.
+3. Панельдегі «Уақытша папка» өрісі macOS-та `/tmp/falconcut-bridge`, Windows-та `%TEMP%\falconcut-bridge` болуы керек.
+4. FalconCut жаңартылғаннан кейін панельдегі **Қайта жүктеу** батырмасын басыңыз.
+5. Панельдің **Қосымша** бөліміндегі **Диагностика** батырмасы уақытша папкаға `falconcut-diagnostics-latest.json` есебін жазады.
 
 ## Жаңарту
 
@@ -179,7 +179,7 @@ npm install
 npm run build
 ```
 
-Содан кейін орнатушыны қайта іске қосып (`npm run setup:mac` немесе `npm run setup:win`), Premiere-дегі панельді **Reload** жасаңыз. Біріктіру (merge) кезінде қақтығыс шықса, AI көмекшіңізден көмек сұраңыз.
+Содан кейін орнатушыны қайта іске қосып (`npm run setup:mac` немесе `npm run setup:win`), Premiere-дегі панельде **Қайта жүктеу** батырмасын басыңыз. Біріктіру (merge) кезінде қақтығыс шықса, AI көмекшіңізден көмек сұраңыз.
 
 ## Жою
 
