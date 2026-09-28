@@ -158,7 +158,7 @@ The answer shows the Premiere version, the open project, and the active sequence
 2. Check that Premiere is open with a project and that **Window > Extensions > FalconCut** is open.
 3. The panel's Temp folder field must be `/tmp/falconcut-bridge` on macOS and `%TEMP%\falconcut-bridge` on Windows.
 4. After updating FalconCut, click **Қайта жүктеу** (Reload) in the panel.
-5. The **Диагностика** (Run Diagnostics) button in the **Қосымша** section writes `falconcut-diagnostics-latest.json` into the temp folder.
+5. The **Диагностика жасау** (Run Diagnostics) button in the **Қосымша** (More) section writes `falconcut-diagnostics-latest.json` into the temp folder.
 
 ## Updating
 
@@ -171,7 +171,7 @@ npm install
 npm run build
 ```
 
-Then rerun the installer (`npm run setup:mac` or `npm run setup:win`) and **Reload** the panel in Premiere.
+Then rerun the installer (`npm run setup:mac` or `npm run setup:win`) and click **Қайта жүктеу** (Reload) in the Premiere panel.
 
 ## Uninstall
 

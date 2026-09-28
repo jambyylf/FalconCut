@@ -25,5 +25,6 @@ export const MCP_SERVER_INSTRUCTIONS = [
   // FalconCut: .mcp.json арқылы қосылғанда skill жүктелмеуі мүмкін, сондықтан тіл ережесі осында да тұр
   'Language (FalconCut):',
   '- Talk to the user in Kazakh unless they write in another language. Keep tool names, paths, and menu names unchanged; relay nextStep in Kazakh.',
+  '- The FalconCut panel is in Kazakh: Start Bridge = «Көпірді іске қосу», Stop Bridge = «Көпірді тоқтату», Reload = «Қайта жүктеу», temp folder = «Уақытша папка», Connected = «Қосылған», Run Diagnostics = «Диагностика жасау» (under «Қосымша»). Name buttons this way.',
   '- After writing Kazakh text into Premiere (captions/SRT, titles, markers, names, metadata), read it back and check that ә ғ қ ң ө ұ ү һ і (and uppercase) are the Cyrillic letters, not Latin or Russian look-alikes. Report ?, □ or missing letters as a failure.',
 ].join('\n');

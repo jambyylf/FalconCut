@@ -12,9 +12,9 @@ FalconCut — тек сіздің компьютеріңізде жұмыс іс
 
 ### Компьютеріңізде қалатын деректер
 
-- **Көпір папкасы** — macOS-та `/tmp/falconcut-bridge`, Windows-та `%TEMP%\falconcut-bridge`. MCP сервері мен Premiere-дегі FalconCut панелі осы папка арқылы команда және жауап файлдарымен алмасады. Бұл файлдарда жоба мен секвенция атаулары, медиа жолдары болуы мүмкін.
-- **Баптаулар** — `~/.falconcut/config.json` (панель тілі мен көпір папкасы).
-- **Диагностика** — панельде «Диагностика» батырмасын басқанда көпір папкасына `falconcut-diagnostics-latest.json` жазылады.
+- **Уақытша папка** — macOS-та `/tmp/falconcut-bridge`, Windows-та `%TEMP%\falconcut-bridge`. MCP сервері мен Premiere-дегі FalconCut панелі осы папка арқылы команда және жауап файлдарымен алмасады. Бұл файлдарда жоба мен секвенция атаулары, медиа жолдары болуы мүмкін.
+- **Баптаулар** — `~/.falconcut/config.json` (панель тілі мен уақытша папка).
+- **Диагностика** — панельдің «Қосымша» бөліміндегі «Диагностика жасау» батырмасын басқанда уақытша папкаға `falconcut-diagnostics-latest.json` жазылады.
 
 Бұл файлдарды өзіңіз біреуге жібермейінше, олар компьютеріңізден шықпайды.
 
@@ -28,9 +28,9 @@ FalconCut is local software. It sends **no** telemetry, usage statistics, or cra
 
 Data that stays on your computer:
 
-- **Bridge folder** — `/tmp/falconcut-bridge` on macOS, `%TEMP%\falconcut-bridge` on Windows. The MCP server and the FalconCut panel in Premiere exchange command and response files here; they can contain project and sequence names and media paths.
-- **Settings** — `~/.falconcut/config.json` (panel language and bridge folder).
-- **Diagnostics** — `falconcut-diagnostics-latest.json` in the bridge folder, written only when you click Run Diagnostics.
+- **Temp folder** — `/tmp/falconcut-bridge` on macOS, `%TEMP%\falconcut-bridge` on Windows. The MCP server and the FalconCut panel in Premiere exchange command and response files here; they can contain project and sequence names and media paths.
+- **Settings** — `~/.falconcut/config.json` (panel language and temp folder).
+- **Diagnostics** — `falconcut-diagnostics-latest.json` in the temp folder, written only when you click «Диагностика жасау» (Run Diagnostics) in the panel's «Қосымша» section.
 
 The AI client you connect (Claude Code, Claude Desktop, Codex, VS Code, …) talks to its own provider under that provider's privacy policy. Adobe Premiere Pro is governed by Adobe's policies.
 

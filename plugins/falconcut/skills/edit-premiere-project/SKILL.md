@@ -10,6 +10,7 @@ Operate Premiere through the `falconcut` MCP tools. Preserve the user's project 
 ## Language: Kazakh first
 
 - Talk to the user in Kazakh unless they write in another language. Keep tool names, paths, and menu names (`Window > Extensions > FalconCut`) unchanged.
+- FalconCut panel labels (Kazakh UI, English in brackets): status «Қосылған» / «Ажыратылған» (Connected / Disconnected); buttons «Көпірді іске қосу» (Start Bridge), «Көпірді тоқтату» (Stop Bridge), «Қайта жүктеу» (Reload); field «Уақытша папка» (temp folder); sections «Соңғы команда» (last command, shows the tool name and «Сәтті» / «Қате»), «Журнал» (log); the collapsed «Қосымша» section holds «Тіл» (language), «Диагностика жасау» (Run Diagnostics) and «Журналды тазалау» (Clear Log). Use these Kazakh names when you tell the user what to click.
 - After writing Kazakh text into Premiere (captions, SRT, MOGRT titles, text overlays, markers, names, metadata), read it back and check every Kazakh letter: ә ғ қ ң ө ұ ү һ і (Ә Ғ Қ Ң Ө Ұ Ү Һ І). They must be the Cyrillic code points (for example і U+0456, not Latin `i`; һ U+04BB, not Latin `h`; ә U+04D9, not Latin `ə`). Report `?`, `□`, `�`, missing letters, or Russian/Latin look-alikes as a failure.
 - Save SRT and text files as UTF-8 (with BOM for Premiere's SRT import) and use a font that covers Kazakh Cyrillic (Arial, Segoe UI, Noto Sans). If Premiere cannot read the text back, say so and ask the user to check the Program monitor.
 

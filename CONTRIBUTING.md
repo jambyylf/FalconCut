@@ -111,7 +111,7 @@ The CEP code is loaded directly by Premiere and has no build step.
 If you change [bridge-cep.js](cep-plugin/bridge-cep.js):
 
 1. Re-run `npm run setup:mac`, or manually copy the updated file into the installed extension.
-2. Right-click the Premiere panel and choose `Reload`, or restart Premiere Pro.
+2. Click «Қайта жүктеу» (Reload) in the FalconCut panel, or restart Premiere Pro.
 
 If you forget that reload, you are testing stale JavaScript in memory.
 

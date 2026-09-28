@@ -21,7 +21,7 @@ falconcut-mcp --doctor
 
    ![Premiere Pro-да developer mode қосу](images/uxp-developer-mode.png)
 
-5. Ақау болса, панельдің **Қосымша** бөліміндегі **Диагностика** батырмасын басыңыз — есеп `/tmp/falconcut-bridge/falconcut-diagnostics-latest.json` файлына жазылады.
+5. Ақау болса, панельдің **Қосымша** бөліміндегі **Диагностика жасау** батырмасын басыңыз — есеп `/tmp/falconcut-bridge/falconcut-diagnostics-latest.json` файлына жазылады.
 
 Содан кейін Claude-ты қайта іске қосып, сұраңыз:
 

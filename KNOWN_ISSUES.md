@@ -195,9 +195,9 @@ Symptoms:
 Fix:
 
 1. Open `Window > Extensions > FalconCut`.
-2. Confirm the temp directory is `/tmp/falconcut-bridge`.
-3. Click `Start Bridge`.
-4. If bridge code changed, right-click the panel and choose `Reload`.
+2. Confirm the panel's «Уақытша папка» (temp folder) field is `/tmp/falconcut-bridge` (Windows: `%TEMP%\falconcut-bridge`).
+3. If the status says «Ажыратылған», click «Көпірді іске қосу» (Start Bridge).
+4. If bridge code changed, click «Қайта жүктеу» (Reload) in the panel.
 
 ### Live verification mutates the active project
 
