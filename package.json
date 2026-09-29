@@ -1,7 +1,7 @@
 {
   "name": "falconcut-mcp",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "FalconCut: Kazakh-first MCP server for Adobe Premiere Pro with a searchable catalog of 280 Premiere tools.",
   "main": "dist/index.js",
   "bin": {

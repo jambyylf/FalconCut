@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="10.0" ExtensionBundleId="kz.onair.falconcut" ExtensionBundleVersion="0.1.0" ExtensionBundleName="FalconCut">
+<ExtensionManifest Version="10.0" ExtensionBundleId="kz.onair.falconcut" ExtensionBundleVersion="0.2.0" ExtensionBundleName="FalconCut">
   <ExtensionList>
-    <Extension Id="kz.onair.falconcut.panel" Version="0.1.0"/>
+    <Extension Id="kz.onair.falconcut.panel" Version="0.2.0"/>
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>

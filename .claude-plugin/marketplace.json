@@ -12,7 +12,7 @@
       "name": "falconcut",
       "source": "./claude-plugins/falconcut",
       "description": "Inspect, edit, verify, and export local Adobe Premiere Pro projects through FalconCut. Talks to the user in Kazakh.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "category": "creative",
       "tags": [
         "premiere-pro",
