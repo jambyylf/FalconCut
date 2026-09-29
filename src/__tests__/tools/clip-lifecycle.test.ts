@@ -47,7 +47,8 @@ describe('clip replace, move, and sequence-from-clips scripts', () => {
       clipId: 'clip-1',
       trackIndex: 2,
     });
-    const script = mockBridge.executeScript.mock.calls[0][0] as string;
+    // FalconCut: withLinked (әдепкі) алдымен жоспар скриптін жібереді — жылжыту скриптін шақырулар ішінен табамыз
+    const script = (mockBridge.executeScript.mock.calls as unknown as string[][]).map((call) => call[0] as string).find((source) => source.includes('case "move_clip_to_track":')) as string;
     expect(script).toContain('if (__idsMatch(other.nodeId, moveTrackClip.clip.nodeId)) continue');
     expect(script).toContain('Pass overwrite:true');
     expect(script).toContain('destTrack.overwriteClip(moveItem, moveParkTime)');

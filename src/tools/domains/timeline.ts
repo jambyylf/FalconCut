@@ -45,22 +45,24 @@ export const timelineTools: ToolModule[] = [
     inputSchema: z.object({
       clipId: z.string().describe('The ID of the clip on the timeline to remove'),
       sequenceId: z.string().optional().describe('Optional sequence ID to search. If omitted, searches the active sequence first, then all sequences.'),
-      deleteMode: z.enum(['ripple', 'lift']).optional().describe('Whether to ripple delete (close gap) or lift (leave gap)')
+      deleteMode: z.enum(['ripple', 'lift']).optional().describe('Whether to ripple delete (close gap) or lift (leave gap)'),
+      withLinked: z.boolean().optional().describe("When true (the default), the clip's linked audio/video parts are removed together with it and every part is read back afterwards. Set false to act on this track item alone.")
     }),
-    run: (ctx, args) => removeFromTimeline(ctx, args.clipId, args.sequenceId, args.deleteMode),
+    run: (ctx, args) => removeFromTimeline(ctx, args.clipId, args.sequenceId, args.deleteMode, args.withLinked !== false),
   },
   {
     name: 'move_clip',
     description: 'Moves a clip along the timeline, keeping it on its current track. To change tracks, use move_clip_to_track: that call restores source in/out after a remove-and-reinsert, refuses an occupied destination unless overwrite is true, and gives the clip a new id.',
     inputSchema: z.object({
       clipId: z.string().describe('The ID of the clip to move'),
-      newTime: z.number().describe('The new time position in seconds')
+      newTime: z.number().describe('The new time position in seconds'),
+      withLinked: z.boolean().optional().describe("When true (the default), the clip's linked audio/video parts are moved together with it and every part is read back afterwards. Set false to act on this track item alone.")
     // .strict() so a leftover newTrackIndex is an error rather than being
     // silently dropped. Zod strips unknown keys by default, which would have
     // let a caller migrating from the old signature keep passing it and keep
     // believing the clip changed track.
     }).strict(),
-    run: (ctx, args) => moveClip(ctx, args.clipId, args.newTime),
+    run: (ctx, args) => moveClip(ctx, args.clipId, args.newTime, args.withLinked !== false),
   },
   {
     name: 'trim_clip',
@@ -69,11 +71,12 @@ export const timelineTools: ToolModule[] = [
       clipId: z.string().describe('The ID of the clip on the timeline to trim'),
       inPoint: z.number().optional().describe('The new in point in seconds from the start of the clip'),
       outPoint: z.number().optional().describe('The new out point in seconds from the start of the clip; cannot be combined with duration'),
-      duration: z.number().optional().describe('Alternative: set the desired timeline duration in seconds; cannot be combined with outPoint')
+      duration: z.number().optional().describe('Alternative: set the desired timeline duration in seconds; cannot be combined with outPoint'),
+      withLinked: z.boolean().optional().describe("When true (the default), the clip's linked audio/video parts are trimmed by the same amount together with it and every part is read back afterwards. Set false to act on this track item alone.")
     }).refine((value) => value.outPoint === undefined || value.duration === undefined, {
       message: 'outPoint and duration cannot be used together'
     }),
-    run: (ctx, args) => trimClip(ctx, args.clipId, args.inPoint, args.outPoint, args.duration),
+    run: (ctx, args) => trimClipWithLinked(ctx, args.clipId, args.inPoint, args.outPoint, args.duration, args.withLinked !== false),
   },
   {
     name: 'split_clip',
@@ -298,7 +301,9 @@ export async function addToTimeline(ctx: ToolContext, sequenceId: string, projec
   }
 }
 
-async function removeFromTimeline(ctx: ToolContext, clipId: string, sequenceId?: string, deleteMode = 'ripple'): Promise<any> {
+async function removeFromTimeline(ctx: ToolContext, clipId: string, sequenceId?: string, deleteMode = 'ripple', withLinked = true): Promise<any> {
+  // FalconCut: withLinked=true болса, клиптің байланған дыбысы/суреті де өшеді,
+  // содан кейін бәрінің шынымен жойылғаны қайта оқылып тексеріледі.
   const script = `
       try {
         var info = __findClip(${JSON.stringify(clipId)}, ${sequenceId ? JSON.stringify(sequenceId) : 'null'});
@@ -306,16 +311,27 @@ async function removeFromTimeline(ctx: ToolContext, clipId: string, sequenceId?:
         var clip = info.clip;
         var clipName = clip.name;
         var isRipple = ${JSON.stringify(deleteMode)} === "ripple";
-        clip.remove(isRipple, true);
-        return JSON.stringify({
-          success: true,
-          message: "Clip removed from timeline",
+        var removal = __removeWithLinked(info, isRipple, ${withLinked ? 'true' : 'false'});
+        var removeResult = {
+          success: removal.ok,
+          message: removal.ok ? (removal.removed.length > 1 ? "Clip and its linked parts removed from timeline" : "Clip removed from timeline") : "Clip removal was not fully applied",
           clipId: ${JSON.stringify(clipId)},
           clipName: clipName,
           sequenceId: info.sequenceId,
           sequenceName: info.sequenceName,
-          deleteMode: ${JSON.stringify(deleteMode)}
-        });
+          deleteMode: ${JSON.stringify(deleteMode)},
+          withLinked: removal.withLinked,
+          linkedMethod: removal.linkedMethod,
+          linkedCount: removal.linkedCount,
+          removedClips: removal.removed
+        };
+        if (removal.warning) removeResult.warning = removal.warning;
+        if (!removal.ok) {
+          removeResult.status = "linked_partial";
+          removeResult.leftovers = removal.leftovers;
+          removeResult.error = removal.warning;
+        }
+        return JSON.stringify(removeResult);
       } catch (e) {
         return JSON.stringify({
           success: false,
@@ -327,7 +343,10 @@ async function removeFromTimeline(ctx: ToolContext, clipId: string, sequenceId?:
   return await ctx.bridge.executeScript(script);
 }
 
-async function moveClip(ctx: ToolContext, clipId: string, newTime: number): Promise<any> {
+export async function moveClip(ctx: ToolContext, clipId: string, newTime: number, withLinked = true): Promise<any> {
+  // FalconCut: Premiere-дің move() әдісі байланған дыбысты өзі жылжытпайды (26.3-те
+  // тексерілді), сондықтан withLinked=true болса әр бөлік жеке жылжытылады, содан
+  // кейін бәрінің жаңа start/end уақыты қайта оқылып тексеріледі.
   const script = `
       try {
         var info = __findClip(${JSON.stringify(clipId)});
@@ -335,15 +354,45 @@ async function moveClip(ctx: ToolContext, clipId: string, newTime: number): Prom
         var clip = info.clip;
         var oldTime = clip.start.seconds;
         var shiftAmount = ${newTime} - oldTime;
+        var withLinked = ${withLinked ? 'true' : 'false'};
+        var linked = __linkedPartners(info);
+        var group = [info];
+        if (withLinked) {
+          for (var g = 0; g < linked.partners.length; g++) group.push(linked.partners[g]);
+        }
+        var before = [];
+        for (var b = 0; b < group.length; b++) before.push(__clipSnapshot(group[b]));
+        var tolerance = __frameSecondsOf(info.sequence) / 2;
         clip.move(shiftAmount);
-        return JSON.stringify({
-          success: true,
-          message: "Clip moved successfully",
+        // Some hosts drag linked items along with move(); only nudge the parts that stayed behind.
+        for (var p = 1; p < before.length; p++) {
+          var partner = __findClipInSequence(info.sequence, before[p].clipId);
+          if (!partner) continue;
+          var partnerStart = __timeSeconds(partner.clip.start);
+          var partnerTarget = before[p].start + shiftAmount;
+          if (Math.abs(partnerStart - partnerTarget) > tolerance) partner.clip.move(partnerTarget - partnerStart);
+        }
+        var check = __verifyLinkedShift(info.sequence, before, shiftAmount);
+        var moveResult = {
+          success: check.ok,
+          message: check.ok ? (before.length > 1 ? "Clip and its linked parts moved and verified" : "Clip moved and verified") : "Clip move was not fully applied",
           clipId: ${JSON.stringify(clipId)},
           oldTime: oldTime,
           newTime: ${newTime},
-          trackIndex: info.trackIndex
-        });
+          trackIndex: info.trackIndex,
+          withLinked: withLinked,
+          linkedMethod: linked.method,
+          linkedCount: withLinked ? linked.partners.length : 0,
+          clips: check.clips
+        };
+        if (!check.ok) {
+          moveResult.status = "linked_partial";
+          moveResult.warning = __linkedShiftWarning(check.clips);
+          moveResult.error = moveResult.warning;
+        } else if (!withLinked && linked.partners.length) {
+          moveResult.warning = linked.partners.length + " linked part(s) were left in place on purpose (withLinked: false); this clip's picture and sound are no longer aligned.";
+        }
+        return JSON.stringify(moveResult);
       } catch (e) {
         return JSON.stringify({
           success: false,
@@ -355,7 +404,7 @@ async function moveClip(ctx: ToolContext, clipId: string, newTime: number): Prom
   return await ctx.bridge.executeScript(script);
 }
 
-export async function trimClip(ctx: ToolContext, clipId: string, inPoint?: number, outPoint?: number, duration?: number): Promise<any> {
+export async function trimClip(ctx: ToolContext, clipId: string, inPoint?: number, outPoint?: number, duration?: number, includeLinked = false): Promise<any> {
   if (outPoint !== undefined && duration !== undefined) {
     return {
       success: false,
@@ -369,6 +418,18 @@ export async function trimClip(ctx: ToolContext, clipId: string, inPoint?: numbe
         var info = __findClip(${JSON.stringify(clipId)});
         if (!info) return JSON.stringify({ success: false, error: "Clip not found" });
         var clip = info.clip;
+        var linkedBefore = [];
+        var linkedMethod = "disabled";
+        ${includeLinked ? `
+        try {
+          var linkedInfo = __linkedPartners(info);
+          linkedMethod = linkedInfo.method;
+          for (var lb = 0; lb < linkedInfo.partners.length; lb++) linkedBefore.push(__clipSnapshot(linkedInfo.partners[lb]));
+        } catch (linkedError) {
+          linkedMethod = "unavailable: " + linkedError.toString();
+          linkedBefore = [];
+        }
+        ` : ''}
         function secondsOf(value) {
           if (value === undefined || value === null) return null;
           if (typeof value === "number") return value;
@@ -532,7 +593,9 @@ export async function trimClip(ctx: ToolContext, clipId: string, inPoint?: numbe
             verificationErrors: verificationErrors,
             writeErrors: writeErrors,
             rollbackErrors: rollbackErrors,
-            frameDurationSeconds: frameDurationSeconds
+            frameDurationSeconds: frameDurationSeconds,
+            linkedBefore: linkedBefore,
+            linkedMethod: linkedMethod
           });
         }
 
@@ -549,7 +612,9 @@ export async function trimClip(ctx: ToolContext, clipId: string, inPoint?: numbe
           before: before,
           after: after,
           writeErrors: writeErrors,
-          frameDurationSeconds: frameDurationSeconds
+          frameDurationSeconds: frameDurationSeconds,
+          linkedBefore: linkedBefore,
+          linkedMethod: linkedMethod
         });
       } catch (e) {
         return JSON.stringify({
@@ -560,6 +625,110 @@ export async function trimClip(ctx: ToolContext, clipId: string, inPoint?: numbe
     `;
 
   return await ctx.bridge.executeScript(script);
+}
+
+/** FalconCut: клиптердің қазіргі start/end/in/out мәндерін id бойынша қайта оқу. */
+async function readClipSnapshots(ctx: ToolContext, clipIds: string[]): Promise<Record<string, any>> {
+  const script = `
+      try {
+        var ids = ${JSON.stringify(clipIds)};
+        var snapshots = {};
+        for (var i = 0; i < ids.length; i++) {
+          var found = __findClip(ids[i]);
+          snapshots[ids[i]] = found ? __clipSnapshot(found) : null;
+        }
+        return JSON.stringify({ success: true, clips: snapshots });
+      } catch (e) {
+        return JSON.stringify({ success: false, error: e.toString() });
+      }
+    `;
+  const result: any = await ctx.bridge.executeScript(script);
+  return result && result.success && result.clips && typeof result.clips === 'object' ? result.clips : {};
+}
+
+/**
+ * FalconCut: trim_clip + байланған бөліктер.
+ *
+ * Негізгі клип бұрынғы тексерілген trimClip арқылы қиылады (ол сәтсіз болса, өзі кері
+ * қайтарады). Содан кейін байланған әр бөлікке дәл сол ығысу (delta) қолданылады —
+ * абсолютті мән емес, өйткені бөлек жазылған дыбыстың in-point-ы басқа болуы мүмкін.
+ * Соңында бәрі қайта оқылып, start/end ығысулары бірдей екені тексеріледі.
+ */
+async function trimClipWithLinked(ctx: ToolContext, clipId: string, inPoint?: number, outPoint?: number, duration?: number, withLinked = true): Promise<any> {
+  const primary: any = await trimClip(ctx, clipId, inPoint, outPoint, duration, withLinked);
+  if (!withLinked) return primary;
+  const partners: any[] = Array.isArray(primary?.linkedBefore) ? primary.linkedBefore : [];
+  if (!primary || primary.success !== true || partners.length === 0 || !primary.before || !primary.after) {
+    const response: any = { ...primary, withLinked: true, linkedCount: partners.length };
+    if (typeof primary?.linkedMethod === 'string' && primary.linkedMethod.startsWith('unavailable')) {
+      response.warning = `Linked parts could not be read (${primary.linkedMethod}); only this track item was trimmed.`;
+    }
+    return response;
+  }
+
+  const before = primary.before;
+  const after = primary.after;
+  const delta = {
+    inPoint: Number(after.inPoint) - Number(before.inPoint),
+    outPoint: Number(after.outPoint) - Number(before.outPoint),
+    start: Number(after.start) - Number(before.start),
+    end: Number(after.end) - Number(before.end),
+  };
+  const frame = Number(primary.frameDurationSeconds) > 0 ? Number(primary.frameDurationSeconds) : 1 / 30;
+  const tolerance = frame / 2 + 0.000001;
+  const close = (a: number, b: number) => Math.abs(a - b) <= tolerance;
+  const followedPrimary = (was: any, now: any) =>
+    now && close(now.start - was.start, delta.start) && close(now.end - was.end, delta.end);
+
+  // Кейбір Premiere нұсқалары байланған бөлікті өзі де қиюы мүмкін — ондайда қайталамаймыз
+  const current = await readClipSnapshots(ctx, partners.map((p) => String(p.clipId)));
+  const partnerResults: any[] = [];
+  for (const partner of partners) {
+    if (followedPrimary(partner, current[partner.clipId])) {
+      partnerResults.push({ clipId: partner.clipId, method: 'followed by Premiere' });
+      continue;
+    }
+    const result: any = await trimClip(
+      ctx,
+      String(partner.clipId),
+      inPoint !== undefined ? Number(partner.inPoint) + delta.inPoint : undefined,
+      outPoint !== undefined ? Number(partner.outPoint) + delta.outPoint : undefined,
+      duration !== undefined ? Number(after.duration) : undefined,
+    );
+    partnerResults.push({ clipId: partner.clipId, success: result?.success === true, error: result?.error });
+  }
+
+  const finalState = await readClipSnapshots(ctx, partners.map((p) => String(p.clipId)));
+  const clips = partners.map((partner) => {
+    const now = finalState[partner.clipId] ?? null;
+    return {
+      clipId: partner.clipId,
+      name: partner.name,
+      track: `${partner.trackType === 'video' ? 'V' : 'A'}${Number(partner.trackIndex) + 1}`,
+      before: { start: partner.start, end: partner.end, inPoint: partner.inPoint, outPoint: partner.outPoint },
+      after: now ? { start: now.start, end: now.end, inPoint: now.inPoint, outPoint: now.outPoint } : null,
+      ok: Boolean(followedPrimary(partner, now)),
+    };
+  });
+  const stuck = clips.filter((clip) => !clip.ok);
+  const response: any = {
+    ...primary,
+    message: stuck.length ? 'Clip trimmed, but not every linked part followed' : 'Clip and its linked parts trimmed and verified',
+    withLinked: true,
+    linkedCount: partners.length,
+    clips,
+    partnerResults,
+  };
+  if (stuck.length) {
+    response.success = false;
+    response.status = 'linked_partial';
+    response.warning =
+      'Not every linked part was trimmed like the clip: ' +
+      stuck.map((clip) => `${clip.track} ${clip.name}`).join('; ') +
+      '. Picture and sound of this clip may now differ in length. Undo in Premiere (Ctrl+Z / Cmd+Z) or trim the listed part by hand.';
+    response.error = response.warning;
+  }
+  return response;
 }
 
 async function splitClip(ctx: ToolContext, clipId: string, splitTime: number): Promise<any> {

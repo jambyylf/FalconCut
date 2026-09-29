@@ -498,6 +498,146 @@ function __findClip(nodeId, sequenceId) {
   }
   return null;
 }
+// FalconCut linked items: a video clip and the audio Premiere links to it.
+// Comments in this prelude stay ASCII because it is sent to the host verbatim.
+function __timeSeconds(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "number") return value;
+  try { if (value.seconds !== undefined) return Number(value.seconds); } catch (eSeconds) {}
+  try { if (value.ticks !== undefined) return Number(value.ticks) / 254016000000; } catch (eTicks) {}
+  return null;
+}
+function __frameSecondsOf(seq) {
+  try {
+    var frame = Number(seq.timebase) / 254016000000;
+    if (frame > 0 && isFinite(frame)) return frame;
+  } catch (eFrame) {}
+  return 1 / 30;
+}
+function __clipSnapshot(info) {
+  var clip = info.clip;
+  return {
+    clipId: String(clip.nodeId),
+    name: String(clip.name),
+    trackType: info.trackType,
+    trackIndex: info.trackIndex,
+    start: __timeSeconds(clip.start),
+    end: __timeSeconds(clip.end),
+    inPoint: __timeSeconds(clip.inPoint),
+    outPoint: __timeSeconds(clip.outPoint)
+  };
+}
+function __linkedPartners(info) {
+  var partners = [];
+  var seen = {};
+  seen[String(info.clip.nodeId)] = true;
+  var linked = null;
+  try { linked = info.clip.getLinkedItems(); } catch (eLinked) { linked = null; }
+  if (linked && linked.numItems !== undefined) {
+    for (var i = 0; i < linked.numItems; i++) {
+      var item = linked[i];
+      if (!item) continue;
+      var itemId = String(item.nodeId);
+      if (seen[itemId]) continue;
+      var found = __findClipInSequence(info.sequence, itemId);
+      if (found) { seen[itemId] = true; partners.push(found); }
+    }
+    return { partners: partners, method: "getLinkedItems" };
+  }
+  // Hosts without getLinkedItems: the other-type clip cut from the same source at the same span.
+  var sourceId = null;
+  try { sourceId = info.clip.projectItem ? String(info.clip.projectItem.nodeId) : null; } catch (eSource) {}
+  if (sourceId === null) return { partners: partners, method: "unavailable" };
+  var start = __timeSeconds(info.clip.start);
+  var end = __timeSeconds(info.clip.end);
+  var tolerance = __frameSecondsOf(info.sequence) / 2;
+  var otherType = info.trackType === "video" ? "audio" : "video";
+  var tracks = otherType === "audio" ? info.sequence.audioTracks : info.sequence.videoTracks;
+  for (var t = 0; t < tracks.numTracks; t++) {
+    var track = tracks[t];
+    for (var c = 0; c < track.clips.numItems; c++) {
+      var candidate = track.clips[c];
+      var candidateSource = null;
+      try { candidateSource = candidate.projectItem ? String(candidate.projectItem.nodeId) : null; } catch (eCandidate) {}
+      if (candidateSource !== sourceId) continue;
+      if (Math.abs(__timeSeconds(candidate.start) - start) > tolerance) continue;
+      if (Math.abs(__timeSeconds(candidate.end) - end) > tolerance) continue;
+      partners.push({ clip: candidate, track: track, trackIndex: t, clipIndex: c, trackType: otherType, sequence: info.sequence, sequenceId: info.sequenceId, sequenceName: info.sequenceName });
+    }
+  }
+  return { partners: partners, method: "sameSourceAndSpan" };
+}
+function __trackLabel(snapshot) {
+  return (snapshot.trackType === "video" ? "V" : "A") + (Number(snapshot.trackIndex) + 1);
+}
+function __verifyLinkedShift(seq, before, shiftSeconds) {
+  var tolerance = __frameSecondsOf(seq) / 2 + 0.000001;
+  var clips = [];
+  var ok = true;
+  for (var i = 0; i < before.length; i++) {
+    var found = __findClipInSequence(seq, before[i].clipId);
+    var after = found ? __clipSnapshot(found) : null;
+    var expectedStart = before[i].start + shiftSeconds;
+    var expectedEnd = before[i].end + shiftSeconds;
+    var moved = after !== null && Math.abs(after.start - expectedStart) <= tolerance && Math.abs(after.end - expectedEnd) <= tolerance;
+    if (!moved) ok = false;
+    clips.push({
+      clipId: before[i].clipId,
+      name: before[i].name,
+      track: __trackLabel(before[i]),
+      trackType: before[i].trackType,
+      trackIndex: before[i].trackIndex,
+      before: { start: before[i].start, end: before[i].end },
+      after: after ? { start: after.start, end: after.end } : null,
+      expectedStart: expectedStart,
+      ok: moved
+    });
+  }
+  return { ok: ok, clips: clips };
+}
+function __linkedShiftWarning(clips) {
+  var stuck = [];
+  for (var i = 0; i < clips.length; i++) {
+    if (clips[i].ok) continue;
+    var where = clips[i].after ? ("is at " + (Math.round(clips[i].after.start * 1000) / 1000) + "s") : "is missing";
+    stuck.push(clips[i].track + " " + clips[i].name + " " + where + " (expected " + (Math.round(clips[i].expectedStart * 1000) / 1000) + "s)");
+  }
+  return "Not every linked part moved: " + stuck.join("; ") + ". Picture and sound of this clip may now be out of sync. Undo in Premiere (Ctrl+Z / Cmd+Z) or move the listed part by hand before editing further.";
+}
+function __removeWithLinked(info, isRipple, withLinked) {
+  var group = [info];
+  var linked = __linkedPartners(info);
+  if (withLinked) {
+    for (var g = 0; g < linked.partners.length; g++) group.push(linked.partners[g]);
+  }
+  var before = [];
+  for (var b = 0; b < group.length; b++) before.push(__clipSnapshot(group[b]));
+  info.clip.remove(isRipple, true);
+  for (var p = 1; p < before.length; p++) {
+    // Premiere may already have taken the partner with it; remove only what is still there.
+    var partner = __findClipInSequence(info.sequence, before[p].clipId);
+    if (partner) partner.clip.remove(isRipple, true);
+  }
+  var leftovers = [];
+  for (var r = 0; r < before.length; r++) {
+    if (__findClipInSequence(info.sequence, before[r].clipId)) leftovers.push(__trackLabel(before[r]) + " " + before[r].name);
+  }
+  var result = {
+    ok: leftovers.length === 0,
+    withLinked: withLinked,
+    linkedMethod: linked.method,
+    linkedCount: withLinked ? linked.partners.length : 0,
+    removed: before,
+    leftovers: leftovers,
+    warning: null
+  };
+  if (leftovers.length) {
+    result.warning = "Not every linked part was removed: " + leftovers.join("; ") + " is still on the timeline. Undo in Premiere (Ctrl+Z / Cmd+Z) or remove it by hand.";
+  } else if (!withLinked && linked.partners.length) {
+    result.warning = linked.partners.length + " linked part(s) were left on the timeline on purpose (withLinked: false).";
+  }
+  return result;
+}
 function __samePath(a, b) {
   function normalize(value) {
     return String(value || '').replace(/\\\\/g, '/').replace(/\\/+$/g, '');

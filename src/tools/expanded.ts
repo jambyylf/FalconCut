@@ -230,13 +230,25 @@ const EXPANDED_REQUIRED_PROJECT_ITEM_ID = new Set([
   'delete_project_item',
 ]);
 
+// FalconCut: байланған дыбыс/суретті бірге өңдейтін кеңейтілген құралдар (сипаттама ағылшынша)
+const EXPANDED_WITH_LINKED: Record<string, string> = {
+  ripple_delete: "When true (the default), the clip's linked audio/video parts are ripple-deleted with it and the removal is read back. Set false to remove this track item alone.",
+  move_clip_to_track: "When true (the default), the clip's linked audio/video parts move by the same track offset, are re-linked, and every part is read back. Nothing moves if a linked part's destination track is missing or occupied. Set false to move this track item alone.",
+};
+
 export function getExpandedTools(existingNames: Set<string>): MCPTool[] {
   return expandedToolNames
     .filter((name) => !existingNames.has(name))
     .map((name) => {
       let inputSchema: z.ZodTypeAny = z.record(z.string(), z.any());
       if (EXPANDED_REQUIRED_CLIP_ID.has(name)) {
-        inputSchema = z.object({ clipId: z.string().min(1).describe('Timeline clip id') }).passthrough();
+        const withLinkedDescription = EXPANDED_WITH_LINKED[name];
+        inputSchema = withLinkedDescription
+          ? z.object({
+              clipId: z.string().min(1).describe('Timeline clip id'),
+              withLinked: z.boolean().optional().describe(withLinkedDescription),
+            }).passthrough()
+          : z.object({ clipId: z.string().min(1).describe('Timeline clip id') }).passthrough();
       } else if (EXPANDED_REQUIRED_PROJECT_ITEM_ID.has(name)) {
         inputSchema = z.object({
           projectItemId: z.string().min(1).describe('Project item id from list_project_items'),
@@ -283,6 +295,10 @@ export async function executeExpandedTool(
       }
       // Caller-authored: pass the source through verbatim.
       return await bridge.executeScript(script, undefined, true);
+    }
+
+    if (name === 'move_clip_to_track' && args.withLinked !== false && (args.clipId || args.node_id || args.nodeId)) {
+      return await moveClipToTrackWithLinked(bridge, args);
     }
 
     if (name === 'capture_frame' && !args.outputPath && !args.path) {
@@ -622,6 +638,183 @@ async function deletePreviewFilesOnDisk(bridge: PremiereProTransport, args: Reco
       skipped
     }
   };
+}
+
+/**
+ * FalconCut: move_clip_to_track + байланған бөліктер.
+ *
+ * 1) Жоспар (ештеңе өзгертпейді): байланған әр бөлік қай трекке баратыны, ол трек бар ма,
+ *    бос па. Бір кедергі болса — ештеңе жылжымайды.
+ * 2) Негізгі клип, содан кейін әр бөлік бұрынғы тексерілген park+trim+slide жолымен жылжиды.
+ * 3) Жаңа клиптер қайта байланады (linkSelection) және бәрі қайта оқылып тексеріледі.
+ * Байланған бөлік табылмаса, бұрынғы бір клиптік жол қолданылады.
+ */
+async function moveClipToTrackWithLinked(bridge: PremiereProTransport, args: Record<string, any>): Promise<any> {
+  const clipId = String(args.clipId ?? args.node_id ?? args.nodeId);
+  const targetIndex = Number(args.trackIndex ?? args.newTrackIndex ?? 0);
+  const overwrite = Boolean(args.overwrite);
+  const sequenceId = typeof args.sequenceId === 'string' && args.sequenceId ? args.sequenceId : null;
+  const plainArgs = { ...args, withLinked: false };
+
+  const plan: any = await bridge.executeScript(`
+      try {
+        var info = __findClip(${JSON.stringify(clipId)}, ${sequenceId ? JSON.stringify(sequenceId) : 'null'});
+        if (!info) return JSON.stringify({ success: false, error: "Clip not found" });
+        var overwrite = ${overwrite ? 'true' : 'false'};
+        var linked = __linkedPartners(info);
+        var delta = ${Number.isFinite(targetIndex) ? targetIndex : 0} - info.trackIndex;
+        var groupIds = {};
+        groupIds[String(info.clip.nodeId)] = true;
+        for (var g = 0; g < linked.partners.length; g++) groupIds[String(linked.partners[g].clip.nodeId)] = true;
+        var partners = [];
+        var problems = [];
+        for (var p = 0; p < linked.partners.length; p++) {
+          var partner = linked.partners[p];
+          var snap = __clipSnapshot(partner);
+          var targetTrackIndex = partner.trackIndex + delta;
+          snap.targetTrackIndex = targetTrackIndex;
+          var tracks = partner.trackType === "video" ? info.sequence.videoTracks : info.sequence.audioTracks;
+          var targetLabel = (partner.trackType === "video" ? "V" : "A") + (targetTrackIndex + 1);
+          if (targetTrackIndex < 0 || targetTrackIndex >= tracks.numTracks) {
+            problems.push(__trackLabel(snap) + " " + snap.name + " would need track " + targetLabel + ", which does not exist");
+          } else if (delta !== 0 && !overwrite) {
+            var destination = tracks[targetTrackIndex];
+            for (var c = 0; c < destination.clips.numItems; c++) {
+              var other = destination.clips[c];
+              if (groupIds[String(other.nodeId)]) continue;
+              var otherStart = __timeSeconds(other.start);
+              var otherEnd = __timeSeconds(other.end);
+              if (snap.start < otherEnd && otherStart < snap.end) {
+                problems.push(targetLabel + " is occupied by " + other.name + " at " + otherStart + "-" + otherEnd + "s");
+                break;
+              }
+            }
+          }
+          partners.push(snap);
+        }
+        return JSON.stringify({ success: true, primary: __clipSnapshot(info), partners: partners, delta: delta, linkedMethod: linked.method, problems: problems });
+      } catch (e) {
+        return JSON.stringify({ success: false, error: e.toString() });
+      }
+    `);
+
+  if (plan && plan.success === false) return { ...plan, tool: 'move_clip_to_track' };
+  const partners: any[] = plan && Array.isArray(plan.partners) ? plan.partners : [];
+  if (!plan || !plan.primary || partners.length === 0 || plan.delta === 0) {
+    return await bridge.executeScript(buildExpandedToolScript('move_clip_to_track', plainArgs));
+  }
+  if (Array.isArray(plan.problems) && plan.problems.length) {
+    return {
+      success: false,
+      tool: 'move_clip_to_track',
+      error: `Linked parts cannot follow this clip: ${plan.problems.join('; ')}. Nothing was changed. Pass overwrite:true, pick another track, or set withLinked:false to move this clip alone.`,
+      errorCode: 'LINKED_TARGET_UNAVAILABLE',
+      details: { plan },
+    };
+  }
+
+  const primaryMove: any = await bridge.executeScript(buildExpandedToolScript('move_clip_to_track', plainArgs));
+  if (!primaryMove || primaryMove.success !== true) return primaryMove;
+  const newPrimaryId = String(primaryMove.data?.clipId ?? clipId);
+
+  const trackLabel = (type: string, index: number) => `${type === 'video' ? 'V' : 'A'}${index + 1}`;
+  const partnerMoves: any[] = [];
+  for (const partner of partners) {
+    const result: any = await bridge.executeScript(buildExpandedToolScript('move_clip_to_track', {
+      clipId: partner.clipId,
+      trackIndex: partner.targetTrackIndex,
+      overwrite,
+      ...(sequenceId ? { sequenceId } : {}),
+      withLinked: false,
+    }));
+    partnerMoves.push({
+      from: `${trackLabel(partner.trackType, partner.trackIndex)} ${partner.name}`,
+      to: trackLabel(partner.trackType, partner.targetTrackIndex),
+      success: result?.success === true,
+      clipId: result?.data?.clipId ?? null,
+      error: result?.success === true ? undefined : result?.error,
+      expected: { trackType: partner.trackType, trackIndex: partner.targetTrackIndex, start: partner.start, end: partner.end },
+    });
+  }
+
+  const moved = partnerMoves.filter((move) => move.success && move.clipId);
+  const ids = [newPrimaryId, ...moved.map((move) => String(move.clipId))];
+  const expected = [
+    { trackType: plan.primary.trackType, trackIndex: plan.primary.trackIndex + plan.delta, start: plan.primary.start, end: plan.primary.end },
+    ...moved.map((move) => move.expected),
+  ];
+  const finish: any = await bridge.executeScript(`
+      try {
+        var ids = ${JSON.stringify(ids)};
+        var expected = ${JSON.stringify(expected)};
+        var first = __findClip(ids[0], ${sequenceId ? JSON.stringify(sequenceId) : 'null'});
+        if (!first) return JSON.stringify({ success: false, error: "Moved clip not found for verification" });
+        var seq = first.sequence;
+        var relinked = false;
+        if (ids.length > 1) {
+          try {
+            var selected = seq.getSelection();
+            for (var s = 0; s < selected.length; s++) { try { selected[s].setSelected(0, 1); } catch (eDeselect) {} }
+          } catch (eSelection) {}
+          for (var i = 0; i < ids.length; i++) {
+            var toSelect = __findClipInSequence(seq, ids[i]);
+            if (toSelect) toSelect.clip.setSelected(1, 1);
+          }
+          try { seq.linkSelection(); relinked = true; } catch (eLink) { relinked = false; }
+          for (var j = 0; j < ids.length; j++) {
+            var toClear = __findClipInSequence(seq, ids[j]);
+            if (toClear) { try { toClear.clip.setSelected(0, 1); } catch (eClear) {} }
+          }
+          if (relinked) {
+            var check = __linkedPartners(__findClipInSequence(seq, ids[0]));
+            if (check.method === "getLinkedItems") relinked = check.partners.length >= ids.length - 1;
+          }
+        }
+        var tolerance = __frameSecondsOf(seq) / 2 + 0.000001;
+        var clips = [];
+        var allOk = true;
+        for (var k = 0; k < ids.length; k++) {
+          var found = __findClipInSequence(seq, ids[k]);
+          var snap = found ? __clipSnapshot(found) : null;
+          var want = expected[k];
+          var okClip = snap !== null && snap.trackType === want.trackType && snap.trackIndex === want.trackIndex &&
+            Math.abs(snap.start - want.start) <= tolerance && Math.abs(snap.end - want.end) <= tolerance;
+          if (!okClip) allOk = false;
+          clips.push({ clipId: ids[k], name: snap ? snap.name : null, track: snap ? __trackLabel(snap) : null, expectedTrack: __trackLabel(want), start: snap ? snap.start : null, end: snap ? snap.end : null, ok: okClip });
+        }
+        return JSON.stringify({ success: true, relinked: relinked, allOk: allOk, clips: clips });
+      } catch (e) {
+        return JSON.stringify({ success: false, error: e.toString() });
+      }
+    `);
+
+  const failedMoves = partnerMoves.filter((move) => !move.success);
+  const verified = finish?.success === true && finish.allOk === true;
+  const data: any = {
+    moved: true,
+    trackIndex: plan.primary.trackIndex + plan.delta,
+    clipId: newPrimaryId,
+    oldClipId: clipId,
+    withLinked: true,
+    linkedMethod: plan.linkedMethod,
+    linkedCount: partners.length,
+    clips: finish?.clips ?? [],
+    partnerMoves: partnerMoves.map(({ expected: _expected, ...rest }) => rest),
+    relinked: finish?.relinked === true,
+  };
+  if (failedMoves.length === 0 && verified) {
+    const response: any = { success: true, tool: 'move_clip_to_track', data };
+    if (!data.relinked) {
+      response.warning = 'All parts moved, but Premiere did not re-link picture and sound. Select them and use Clip > Link (or link_audio_video) before moving them again.';
+    }
+    return response;
+  }
+  const problems = [
+    ...failedMoves.map((move) => `${move.from} -> ${move.to} failed: ${move.error ?? 'unknown error'}`),
+    ...(finish?.clips ?? []).filter((clip: any) => !clip.ok).map((clip: any) => `${clip.name ?? clip.clipId} is on ${clip.track ?? 'no track'} (expected ${clip.expectedTrack})`),
+  ];
+  const warning = `Not every linked part moved: ${problems.join('; ') || 'verification failed'}. Picture and sound of this clip are no longer on matching tracks. Undo in Premiere (Ctrl+Z / Cmd+Z) or move the listed part by hand.`;
+  return { success: false, tool: 'move_clip_to_track', status: 'linked_partial', warning, error: warning, data };
 }
 
 function buildExpandedToolScript(name: string, args: Record<string, any>): string {
@@ -1672,8 +1865,13 @@ function buildExpandedToolScript(name: string, args: Record<string, any>): strin
           if (!args.clipId && !args.node_id && !args.nodeId) return fail("ripple_delete requires clipId.");
           var rippleClip = findClip(args.clipId || args.node_id || args.nodeId);
           if (!rippleClip) return fail(pendingSequenceError || "Clip not found");
-          rippleClip.clip.remove(true, true);
-          return ok({ removed: true, ripple: true, clipId: args.clipId || args.node_id || args.nodeId });
+          var rippleRemoval = __removeWithLinked(rippleClip, true, args.withLinked !== false);
+          if (!rippleRemoval.ok) {
+            return fail(rippleRemoval.warning, { status: "linked_partial", warning: rippleRemoval.warning, removedClips: rippleRemoval.removed, leftovers: rippleRemoval.leftovers });
+          }
+          var rippleData = { removed: true, ripple: true, clipId: args.clipId || args.node_id || args.nodeId, withLinked: rippleRemoval.withLinked, linkedMethod: rippleRemoval.linkedMethod, linkedCount: rippleRemoval.linkedCount, removedClips: rippleRemoval.removed };
+          if (rippleRemoval.warning) rippleData.warning = rippleRemoval.warning;
+          return ok(rippleData);
 
         case "roll_edit":
         case "slide_edit":
@@ -1765,6 +1963,34 @@ function buildExpandedToolScript(name: string, args: Record<string, any>): strin
           // [start, end) and destroy a neighbour the occupancy guard never looked
           // at. Park past the last clip on the target track instead (guaranteed
           // empty), trim there, then slide into the span the guard verified.
+          // FalconCut: overwriteClip on a video track can also lay the linked audio onto an
+          // audio track (see add_to_timeline linkAudio). Park past the end of EVERY track so
+          // that copy never lands on existing audio, and sweep the park zone afterwards.
+          var moveTrackGroups = [moveTrackClip.sequence.videoTracks, moveTrackClip.sequence.audioTracks];
+          for (var mg = 0; mg < moveTrackGroups.length; mg++) {
+            for (var mt = 0; mt < moveTrackGroups[mg].numTracks; mt++) {
+              var moveScanTrack = moveTrackGroups[mg][mt];
+              for (var mc = 0; mc < moveScanTrack.clips.numItems; mc++) {
+                var moveScanEnd = valueOfTime(moveScanTrack.clips[mc].end);
+                if (moveScanEnd > moveLastEnd) moveLastEnd = moveScanEnd;
+              }
+            }
+          }
+          var moveSweepParkZone = function () {
+            // The park zone was empty on every track before this move, so anything
+            // still starting there was laid down by it.
+            var swept = 0;
+            for (var sg = 0; sg < moveTrackGroups.length; sg++) {
+              for (var st = 0; st < moveTrackGroups[sg].numTracks; st++) {
+                var sweepTrack = moveTrackGroups[sg][st];
+                for (var sc = sweepTrack.clips.numItems - 1; sc >= 0; sc--) {
+                  var stray = sweepTrack.clips[sc];
+                  try { if (stray && valueOfTime(stray.start) > moveLastEnd + 0.5) { stray.remove(false, true); swept++; } } catch (eStray) {}
+                }
+              }
+            }
+            return swept;
+          };
           var moveParkTime = moveLastEnd + 1.0;
           var moveCleanupParked = function (parkedClip) {
             // Remove the parked copy so no failure path strands a full-length
@@ -1777,6 +2003,7 @@ function buildExpandedToolScript(name: string, args: Record<string, any>): strin
               var leftover = destTrack.clips[ci];
               try { if (leftover && valueOfTime(leftover.start) > moveLastEnd + 0.5) leftover.remove(false, true); } catch (eSweep) {}
             }
+            moveSweepParkZone();
           };
           destTrack.overwriteClip(moveItem, moveParkTime);
           var placed = null;
@@ -1825,10 +2052,11 @@ function buildExpandedToolScript(name: string, args: Record<string, any>): strin
             moveCleanupParked(placed);
             return fail("Clip could not be slid into the destination span; the source clip was left in place.", { requestedStart: moveStart, actualStart: placedStart });
           }
+          var moveStraysRemoved = moveSweepParkZone();
           // Only now, with the copy verified at the destination, lift the original
           // (ripple = false), so the source track's other clips keep their timing.
           moveTrackClip.clip.remove(false, true);
-          return ok({ moved: true, trackIndex: moveTargetIndex, method: "park+trim+slide", start: moveStart, clipId: placed.nodeId, oldClipId: args.clipId || args.node_id || args.nodeId, trimRestored: true });
+          return ok({ moved: true, trackIndex: moveTargetIndex, method: "park+trim+slide", start: moveStart, clipId: placed.nodeId, oldClipId: args.clipId || args.node_id || args.nodeId, trimRestored: true, strayCopiesRemoved: moveStraysRemoved });
 
         case "set_clip_speed_qe":
           if (!args.clipId && !args.node_id && !args.nodeId) return fail("set_clip_speed_qe requires clipId.");
