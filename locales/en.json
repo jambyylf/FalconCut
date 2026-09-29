@@ -137,10 +137,16 @@
   "doctor.config_unexpected": "{0}: unexpected check result: {1}",
   "doctor.cli_ok": "falconcut-mcp command found: {0}",
   "doctor.cli_missing": "falconcut-mcp is not on PATH. Claude Code's .mcp.json needs it: run npm link in the FalconCut folder",
+  "doctor.section_ffmpeg": "ffmpeg (audio analysis)",
+  "doctor.ffmpeg_ok": "ffmpeg found: {0}",
+  "doctor.ffmpeg_missing": "ffmpeg was not found. sync_by_audio and detect_silence need it. Install: {0}",
   "doctor.panel_live": "The FalconCut panel is running in Premiere (last signal {0} s ago)",
   "doctor.panel_stopped": "The FalconCut panel is open but its bridge is stopped. Click Start Bridge.",
   "doctor.panel_offline": "The FalconCut panel is not running right now (normal while Premiere is closed)",
   "doctor.manual_panel_check": "To test the live connection, open Premiere and Window > Extensions > FalconCut, then ask your AI client to run verify_premiere_connection.",
   "doctor.failed": "The check found {0} problem(s).",
-  "doctor.passed": "All required checks passed."
+  "doctor.passed": "All required checks passed.",
+
+  "sync.ffmpeg_missing": "ffmpeg was not found, so the audio cannot be analysed. Install ffmpeg ({0}) or set FALCONCUT_FFMPEG to its full path, then run sync_by_audio again.",
+  "sync.ffmpeg_failed": "ffmpeg could not read the audio: {0}"
 }

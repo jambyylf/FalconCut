@@ -10,9 +10,9 @@
  * сондықтан бұл модуль тек CLI сияқты адам оқитын мәтіндерге қолданылады.
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { CONFIG_DIR_NAME, LANG_ENV } from './brand.js';
 
 export const SUPPORTED_LOCALES = ['kk', 'en'] as const;
@@ -69,4 +69,21 @@ export function formatMessage(template: string, args: ReadonlyArray<string | num
 
 export function createTranslator(messages: Messages): Translate {
   return (key, ...args) => formatMessage(messages[key] ?? key, args);
+}
+
+/**
+ * MCP серверінің өзі (мысалы, құрал қатесі) үшін locales/ папкасын табу.
+ * Сервер dist/index.js ретінде іске қосылады, сондықтан алдымен соның қасындағы ../locales,
+ * болмаса ағымдағы папкадағы locales/ (тесттер мен әзірлеу кезінде).
+ */
+export function findLocalesDir(argv1: string | undefined = process.argv[1], cwd: string = process.cwd()): string | undefined {
+  const candidates = [argv1 ? join(dirname(argv1), '..', 'locales') : '', join(cwd, 'locales')].filter(Boolean);
+  return candidates.find((dir) => existsSync(join(dir, 'en.json')));
+}
+
+/** Сервер үшін аудармашы: аударма табылмаса, берілген ағылшынша мәтінді қайтарады. */
+export function serverTranslate(key: string, fallback: string, ...args: Array<string | number>): string {
+  const dir = findLocalesDir();
+  const translated = dir ? createTranslator(loadMessages(dir, resolveLocale()))(key, ...args) : key;
+  return translated === key ? formatMessage(fallback, args) : translated;
 }

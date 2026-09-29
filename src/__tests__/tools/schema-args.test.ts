@@ -39,7 +39,9 @@ describe('seeded arguments', () => {
     // detect_silence is excluded by construction, not by convenience: it requires
     // one of mediaPath or projectItemId and both are optional, so an object
     // holding only required fields cannot satisfy it.
-    const CANNOT_BE_SATISFIED_BY_REQUIRED_ONLY = new Set(['detect_silence']);
+    // FalconCut: sync_by_audio is the same shape — it needs referenceClipId or referenceTrackIndex,
+    // and targetClipId or targetTrackIndex, all four optional.
+    const CANNOT_BE_SATISFIED_BY_REQUIRED_ONLY = new Set(['detect_silence', 'sync_by_audio']);
     const rejected: string[] = [];
 
     for (const tool of tools) {

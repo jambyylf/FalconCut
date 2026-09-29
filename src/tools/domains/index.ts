@@ -15,6 +15,7 @@ import { markersTools } from './markers.js';
 import { mediaTools } from './media.js';
 import { projectTools } from './project.js';
 import { sequenceTools } from './sequence.js';
+import { syncTools } from './sync.js';
 import { timelineTools } from './timeline.js';
 import { tracksTools } from './tracks.js';
 import { workflowsTools } from './workflows.js';
@@ -29,6 +30,7 @@ export const domainTools: ToolModule[] = [
   ...mediaTools,
   ...projectTools,
   ...sequenceTools,
+  ...syncTools,
   ...timelineTools,
   ...tracksTools,
   ...workflowsTools,

@@ -73,6 +73,11 @@ describe('every translation key used in code exists', () => {
     'panel.queue.executing',
     'panel.queue.completed',
   ]);
+  // Сервердің өз хабарламалары (мысалы, sync_by_audio: ffmpeg табылмады)
+  for (const file of readdirSync(path.join(ROOT, 'src'), { recursive: true }) as string[]) {
+    if (!file.endsWith('.ts') || file.includes('__tests__')) continue;
+    for (const key of collect(read(`src/${file.replace(/\\/g, '/')}`), /serverTranslate\(\s*'([a-z0-9_.]+)'/g)) used.add(key);
+  }
   for (const file of readdirSync(path.join(ROOT, 'scripts'))) {
     if (file.endsWith('.sh')) {
       for (const key of collect(read(`scripts/${file}`), /\$\(t ([a-z]+\.[a-z0-9_.]+)/g)) used.add(key);

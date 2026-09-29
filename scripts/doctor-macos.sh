@@ -159,6 +159,14 @@ else
   warn "$(t doctor.cli_missing)"
 fi
 
+# sync_by_audio мен detect_silence дыбысты ffmpeg арқылы оқиды (FALCONCUT_FFMPEG — толық жол)
+FFMPEG_BIN="${FALCONCUT_FFMPEG:-ffmpeg}"
+if command -v "$FFMPEG_BIN" >/dev/null 2>&1; then
+  pass "$(t doctor.ffmpeg_ok "$(command -v "$FFMPEG_BIN")")"
+else
+  warn "$(t doctor.ffmpeg_missing "brew install ffmpeg")"
+fi
+
 # Панель әр 250 мс сайын көпір папкасына bridge-heartbeat.json жазады
 PANEL_STATE="$(
   HEARTBEAT_PATH="$TEMP_DIR/bridge-heartbeat.json" node -e '

@@ -16,7 +16,9 @@
 
 FalconCut is local software that lets AI assistants such as Claude Code, Claude Desktop, and Codex work with your Premiere Pro project. You ask the assistant for an edit in plain language, and it performs real editing operations inside Premiere.
 
-- **283 Premiere tools:** projects, media import, sequences, timeline editing, effects, color, audio, captions, markers, and export.
+- **284 Premiere tools:** projects, media import, sequences, timeline editing, effects, color, audio, captions, markers, and export.
+- **Two-camera sync by audio** (`sync_by_audio`): measures at several points, checks drift and confidence, and only then moves the clip.
+- **Linked picture and sound stay together:** moving, removing or trimming a clip also moves, removes or trims its linked audio (`withLinked`, default true).
 - **The FalconCut panel inside Premiere** — Kazakh interface by default, English on request.
 - **A Kazakh-speaking assistant:** the bundled agent skill talks to you in Kazakh and checks that ә, ғ, қ, ң, ө, ұ, ү, һ, і render correctly in captions and titles.
 - **No telemetry:** FalconCut makes no network requests at all ([PRIVACY.md](PRIVACY.md)).
@@ -145,7 +147,7 @@ The answer shows the Premiere version, the open project, and the active sequence
 - Premiere's scripting API does not expose every UI operation; FalconCut reports unsupported operations instead of pretending.
 - Professional titles depend on real `.mogrt` (Motion Graphics) templates.
 - The export queue needs Adobe Media Encoder.
-- `detect_silence` needs `ffmpeg` on `PATH`.
+- `sync_by_audio` and `detect_silence` need `ffmpeg` (on `PATH` or via `FALCONCUT_FFMPEG`). `--doctor` checks for it.
 - The FalconCut panel is an unsigned CEP extension, so the installer enables Adobe CEP debug mode. Occasionally Premiere also needs **Settings > Plugins > Enable developer mode** ([screenshot](images/uxp-developer-mode.png)).
 - `uxp-plugin/` is an experimental panel: the installer does not install it and it is not translated.
 - For Kazakh captions and titles choose a font that covers the Kazakh Cyrillic letters (for example Arial, Segoe UI, Noto Sans); otherwise the letters show as empty boxes.

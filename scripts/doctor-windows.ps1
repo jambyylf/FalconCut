@@ -162,6 +162,16 @@ if ($cli) {
     Warn (T 'doctor.cli_missing')
 }
 
+# sync_by_audio and detect_silence read audio through ffmpeg (FALCONCUT_FFMPEG = full path).
+Write-Host (T 'doctor.section_ffmpeg')
+$ffmpegName = if ($env:FALCONCUT_FFMPEG) { $env:FALCONCUT_FFMPEG } else { 'ffmpeg' }
+$ffmpeg = Get-Command $ffmpegName -ErrorAction SilentlyContinue
+if ($ffmpeg) {
+    Pass (T 'doctor.ffmpeg_ok' @($ffmpeg.Source))
+} else {
+    Warn (T 'doctor.ffmpeg_missing' @('winget install Gyan.FFmpeg'))
+}
+
 # The panel rewrites bridge-heartbeat.json every 250 ms while Premiere has it open.
 Write-Host (T 'doctor.section_panel')
 $heartbeatPath = Join-Path $TempDir 'bridge-heartbeat.json'

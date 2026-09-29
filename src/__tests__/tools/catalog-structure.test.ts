@@ -31,7 +31,8 @@ describe('tool catalog structure', () => {
   it('gives every domain tool a callable handler', () => {
     const unrunnable = domainTools.filter((tool) => typeof tool.run !== 'function');
     expect(unrunnable.map((tool) => tool.name)).toEqual([]);
-    expect(domainTools.length).toBe(112);
+    // FalconCut: +1 (sync_by_audio)
+    expect(domainTools.length).toBe(113);
   });
 
   it('exposes every domain module through the barrel', () => {
