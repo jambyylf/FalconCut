@@ -162,7 +162,7 @@ if ($cli) {
     Warn (T 'doctor.cli_missing')
 }
 
-# sync_by_audio and detect_silence read audio through ffmpeg (FALCONCUT_FFMPEG = full path).
+# sync_by_audio, cut_silences and detect_silence read audio through ffmpeg (FALCONCUT_FFMPEG = full path).
 Write-Host (T 'doctor.section_ffmpeg')
 $ffmpegName = if ($env:FALCONCUT_FFMPEG) { $env:FALCONCUT_FFMPEG } else { 'ffmpeg' }
 $ffmpeg = Get-Command $ffmpegName -ErrorAction SilentlyContinue

@@ -6,6 +6,7 @@
  */
 
 import { spawn } from 'node:child_process';
+import { parseSilencedetect } from './silence.js';
 
 /** ffmpeg табылмағанда шығатын қате. */
 export class FfmpegNotFoundError extends Error {
@@ -73,6 +74,53 @@ export function decodeAudioWindow(
       const samples = new Float32Array(buffer.length >> 1);
       for (let i = 0; i < samples.length; i++) samples[i] = buffer.readInt16LE(i * 2) / 32768;
       resolve(samples);
+    });
+  });
+}
+
+/**
+ * Файлдың [startSeconds, startSeconds + durationSeconds] бөлігіндегі үнсіздіктер
+ * (ffmpeg silencedetect). Аралықтар үзіндінің басынан бастап, секундпен.
+ */
+export function detectSilenceWindows(
+  mediaPath: string,
+  startSeconds: number,
+  durationSeconds: number,
+  thresholdDb: number,
+  minSilenceSeconds: number,
+  command: string = ffmpegCommand(),
+): Promise<Array<[number, number]>> {
+  return new Promise((resolve, reject) => {
+    const args = [
+      '-hide_banner',
+      '-nostdin',
+      '-ss', Math.max(0, startSeconds).toFixed(3),
+      '-t', Math.max(0, durationSeconds).toFixed(3),
+      '-i', mediaPath,
+      '-vn',
+      '-af', `silencedetect=noise=${thresholdDb}dB:d=${minSilenceSeconds}`,
+      '-f', 'null',
+      '-',
+    ];
+    let child;
+    try {
+      child = spawn(command, args, { windowsHide: true });
+    } catch (error) {
+      reject((error as NodeJS.ErrnoException).code === 'ENOENT' ? new FfmpegNotFoundError(command) : error);
+      return;
+    }
+    let stderr = '';
+    child.stdout.on('data', () => {});
+    child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+    child.on('error', (error: NodeJS.ErrnoException) => {
+      reject(error.code === 'ENOENT' ? new FfmpegNotFoundError(command) : error);
+    });
+    child.on('close', (code: number | null) => {
+      if (code !== 0) {
+        reject(new Error(`ffmpeg exited with code ${code}: ${stderr.trim().slice(-500)}`));
+        return;
+      }
+      resolve(parseSilencedetect(stderr, durationSeconds));
     });
   });
 }

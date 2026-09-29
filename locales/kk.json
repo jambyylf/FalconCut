@@ -139,7 +139,7 @@
   "doctor.cli_missing": "falconcut-mcp командасы PATH ішінде жоқ. Claude Code-тың .mcp.json файлына ол керек: FalconCut папкасында npm link орындаңыз",
   "doctor.section_ffmpeg": "ffmpeg (дыбысты талдау)",
   "doctor.ffmpeg_ok": "ffmpeg табылды: {0}",
-  "doctor.ffmpeg_missing": "ffmpeg табылмады. sync_by_audio мен detect_silence құралдарына ол керек. Орнату: {0}",
+  "doctor.ffmpeg_missing": "ffmpeg табылмады. sync_by_audio, cut_silences және detect_silence құралдарына ол керек. Орнату: {0}",
   "doctor.panel_live": "FalconCut панелі Premiere-де жұмыс істеп тұр (соңғы сигнал {0} с бұрын)",
   "doctor.panel_stopped": "FalconCut панелі ашық, бірақ көпір тоқтатылған. «Көпірді іске қосу» батырмасын басыңыз.",
   "doctor.panel_offline": "FalconCut панелі қазір жұмыс істеп тұрған жоқ (Premiere жабық болса, бұл қалыпты)",
@@ -148,5 +148,8 @@
   "doctor.passed": "Барлық міндетті тексерістер сәтті өтті.",
 
   "sync.ffmpeg_missing": "ffmpeg табылмады, сондықтан дыбысты талдау мүмкін емес. ffmpeg-ті орнатыңыз ({0}) немесе FALCONCUT_FFMPEG орта айнымалысына оның толық жолын жазыңыз, содан кейін sync_by_audio-ны қайта іске қосыңыз.",
-  "sync.ffmpeg_failed": "ffmpeg дыбысты оқи алмады: {0}"
+  "sync.ffmpeg_failed": "ffmpeg дыбысты оқи алмады: {0}",
+
+  "silence.sequence_suffix": "үнсіз жерлерсіз",
+  "silence.ffmpeg_missing": "ffmpeg табылмады, сондықтан дыбысты талдау мүмкін емес. ffmpeg-ті орнатыңыз ({0}) немесе FALCONCUT_FFMPEG орта айнымалысына оның толық жолын жазыңыз, содан кейін құралды қайта іске қосыңыз."
 }

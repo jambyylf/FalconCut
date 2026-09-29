@@ -6,7 +6,7 @@ This file tracks current, confirmed limits. It is no longer a backlog of already
 
 The current built tool catalog exposes:
 
-- `284` tools (`116` declared in the domain modules under `src/tools/domains/`, including FalconCut's `sync_by_audio`, and `168` in `src/tools/expanded.ts`)
+- `285` tools (`117` declared in the domain modules under `src/tools/domains/`, including FalconCut's `sync_by_audio` and `cut_silences`, and `168` in `src/tools/expanded.ts`)
 - By default `tools/list` advertises 5 always-on tools; the rest are reached with `search_tools` then `invoke_tool`. Set `FALCONCUT_TOOLSET=full` to list the whole catalog.
 
 Counted from the built catalog with `getAvailableTools().length`, not from this file.

@@ -159,7 +159,7 @@ else
   warn "$(t doctor.cli_missing)"
 fi
 
-# sync_by_audio мен detect_silence дыбысты ffmpeg арқылы оқиды (FALCONCUT_FFMPEG — толық жол)
+# sync_by_audio, cut_silences және detect_silence дыбысты ffmpeg арқылы оқиды (FALCONCUT_FFMPEG — толық жол)
 FFMPEG_BIN="${FALCONCUT_FFMPEG:-ffmpeg}"
 if command -v "$FFMPEG_BIN" >/dev/null 2>&1; then
   pass "$(t doctor.ffmpeg_ok "$(command -v "$FFMPEG_BIN")")"

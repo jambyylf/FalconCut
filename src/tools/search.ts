@@ -123,6 +123,7 @@ const TOOL_ALIASES: Record<string, string> = {
   apply_effect: 'lumetri exposure blur filter',
   add_text_overlay: 'title caption mogrt graphics type',
   detect_silence: 'quiet gaps ffmpeg audio silence',
+  cut_silences: 'remove pauses silence jump cut dead air trim quiet gaps talking head',
   sync_by_audio: 'synchronize synchronise align two cameras multicam waveform offset drift camera sync',
   razor_timeline_at_time: 'cut split blade razor',
   add_to_timeline: 'place insert overwrite put clip on sequence',
