@@ -103,6 +103,38 @@ describe('CEP panel: «Соңғы команда»', () => {
     expect(() => bridge.processCommandFile('/tmp/falconcut-bridge/command-c4.json')).not.toThrow();
     expect(published).toBe(true);
   });
+
+  // FalconCut: «Қайта жүктеу»-ден кейін тірі қалған ескі бет бір команданы екінші рет орындамауы керек
+  it('claims a command by renaming it before reading, so a second panel instance cannot run it again', () => {
+    const { bridge, fs: panelFs } = loadPanel();
+    const stub = panelFs as unknown as {
+      renameSync: (from: string, to: string) => void;
+      readFileSync: (file: string) => string;
+      unlinkSync: (file: string) => void;
+    };
+    const renamed: string[][] = [];
+    const read: string[] = [];
+    const removed: string[] = [];
+    stub.renameSync = (from, to) => { renamed.push([from, to]); };
+    stub.readFileSync = (file) => { read.push(file); return JSON.stringify({ id: 'c5', script: 'return 1;' }); };
+    stub.unlinkSync = (file) => { removed.push(file); };
+    bridge.addToQueue = () => {};
+    bridge.updateCommandStatus = () => {};
+    let runs = 0;
+    bridge.executeCommand = (_command: unknown, done: (result: unknown) => void) => { runs++; done({ success: true, result: 1 }); };
+
+    bridge.processCommandFile('/tmp/falconcut-bridge/command-c5.json');
+
+    expect(renamed[0]).toEqual(['/tmp/falconcut-bridge/command-c5.json', '/tmp/falconcut-bridge/claimed-c5.json']);
+    expect(read).toEqual(['/tmp/falconcut-bridge/claimed-c5.json']);
+    expect(removed).toContain('/tmp/falconcut-bridge/claimed-c5.json');
+    expect(runs).toBe(1);
+
+    // Екінші дана: файлды біреу алып қойған — rename сәтсіз, команда қайта орындалмайды
+    stub.renameSync = () => { throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' }); };
+    bridge.processCommandFile('/tmp/falconcut-bridge/command-c5.json');
+    expect(runs).toBe(1);
+  });
 });
 
 describe('server: "tool" field in the command file', () => {

@@ -85,4 +85,39 @@ describe('CEP panel heartbeat', () => {
       expect.stringMatching(/"started":true/),
     );
   });
+
+  // FalconCut: Premiere ұзақ скриптті орындағанда панельдің сигналы тоқтайды
+  it('marks itself busy until the script timeout before handing a script to Premiere', () => {
+    jest.useFakeTimers();
+    const { bridge, fs } = loadPanel();
+    bridge.getTempDirectory = () => '/tmp/falconcut-bridge';
+    bridge.isConnected = true;
+    bridge.log = () => {};
+    const order: string[] = [];
+    fs.writeFileSync.mockImplementation((file: string, content: string) => {
+      if (String(file).endsWith('bridge-heartbeat.json')) order.push(content);
+    });
+    bridge.csInterface = {
+      getHostEnvironment: () => ({ appName: 'PPRO', appVersion: '26.0.0' }),
+      evalScript: () => { order.push('evalScript'); },
+    };
+    bridge.normalizeHostEnvironment = (value: unknown) => value;
+
+    const before = Date.now();
+    bridge.executeExtendScript('return 1;', () => {}, 300000);
+
+    expect(order).toHaveLength(2);
+    expect(order[1]).toBe('evalScript');
+    const beat = JSON.parse(order[0]!);
+    expect(beat.started).toBe(true);
+    expect(beat.busyUntil).toBeGreaterThanOrEqual(before + 305000);
+
+    // Таймер арасында жазылған сигнал да белгіні сақтайды, скрипт біткенде ол алынады
+    bridge.writeHeartbeat();
+    expect(JSON.parse(order[2]!).busyUntil).toBe(beat.busyUntil);
+    bridge.releaseEvalScript();
+    bridge.writeHeartbeat();
+    expect(JSON.parse(order[3]!).busyUntil).toBeUndefined();
+    jest.useRealTimers();
+  });
 });

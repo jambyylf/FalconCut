@@ -204,5 +204,51 @@ describe('bridge file-queue protocol', () => {
       await expect(bridge.executeScript('return 1;', 700)).rejects.toThrow(/timeout/i);
       expect(Date.now() - started).toBeGreaterThanOrEqual(700);
     });
+
+    // FalconCut: ұзақ скрипт кезінде панель сигнал жаза алмайды, бірақ busyUntil жазып кеткен
+    it('keeps waiting while the panel is busy with a long script, although its heartbeat is old', async () => {
+      mockFs.readFile.mockImplementation(async (file) => {
+        if (String(file) === heartbeatPath) {
+          return JSON.stringify({ t: Date.now() - 10000, started: true, busyUntil: Date.now() + 60000 });
+        }
+        throw new Error('ENOENT');
+      });
+      const bridge = await readyBridge();
+      const started = Date.now();
+
+      await expect(bridge.executeScript('return 1;', 2500)).rejects.toThrow(/Bridge response timeout/);
+      expect(Date.now() - started).toBeGreaterThanOrEqual(2500);
+    });
+
+    // FalconCut: панель сигнал файлын секунд сайын қайта жазады — сервер оны жазылып жатқан
+    // сәтте оқып, бос мәтін алуы мүмкін. Бұл «панель жоқ» дегенді білдірмейді.
+    it('does not report a missing panel when it reads the heartbeat mid-write', async () => {
+      let reads = 0;
+      mockFs.readFile.mockImplementation(async (file) => {
+        if (String(file) === heartbeatPath) {
+          reads += 1;
+          return reads % 3 === 0 ? '' : JSON.stringify({ t: Date.now(), started: true });
+        }
+        throw new Error('ENOENT');
+      });
+      const bridge = await readyBridge();
+
+      await expect(bridge.executeScript('return 1;', 2500)).rejects.toThrow(/Bridge response timeout/);
+      expect(reads).toBeGreaterThan(3);
+    });
+
+    it('stops trusting a busy mark once it has expired or is implausibly long', async () => {
+      for (const beat of [
+        { t: Date.now() - 10000, started: true, busyUntil: Date.now() - 1000 },
+        { t: Date.now() - 400000, started: true, busyUntil: Date.now() + 60000 },
+      ]) {
+        mockFs.readFile.mockImplementation(async (file) => {
+          if (String(file) === heartbeatPath) return JSON.stringify(beat);
+          throw new Error('ENOENT');
+        });
+        const bridge = await readyBridge();
+        await expect(bridge.executeScript('return 1;', 20000)).rejects.toThrow(/MCP Bridge is not running/);
+      }
+    });
   });
 });

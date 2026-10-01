@@ -499,8 +499,17 @@
 
     MCPPremiereBridge.prototype.processCommandFile = function(filePath) {
         var self = this;
+        // FalconCut: команданы орындамас бұрын оны «өзімізге аламыз». rename() атомарлы,
+        // сондықтан бірнеше панель данасы (мысалы, «Қайта жүктеу»-ден кейін тірі қалған
+        // ескі бет) бір команданы екі рет орындай алмайды: екіншісі файлды таппайды.
+        var claimedPath = filePath.replace('command-', 'claimed-');
         try {
-            var fileContent = fs.readFileSync(filePath, 'utf8');
+            fs.renameSync(filePath, claimedPath);
+        } catch (eClaim) {
+            return;
+        }
+        try {
+            var fileContent = fs.readFileSync(claimedPath, 'utf8');
             var command = JSON.parse(fileContent);
             this.log(t('panel.log.processing', command.id), 'info');
             this.addToQueue(command);
@@ -516,7 +525,7 @@
                     // timeout path, so this unlink can legitimately fail — and if it were
                     // allowed to reach the catch below it would overwrite the result that
                     // was just published, turning a completed command into an error.
-                    try { fs.unlinkSync(filePath); } catch (eUnlink) {}
+                    try { fs.unlinkSync(claimedPath); } catch (eUnlink) {}
 
                     self.log(t('panel.log.completed', command.id), 'info');
                     self.updateCommandStatus(command.id, 'completed');
@@ -539,7 +548,7 @@
             try {
                 var responseFile = filePath.replace('command-', 'response-');
                 this.writeResponseAtomic(responseFile, { error: e.message, timestamp: new Date().toISOString() });
-                try { fs.unlinkSync(filePath); } catch (eUnlink) {}
+                try { fs.unlinkSync(claimedPath); } catch (eUnlink) {}
             } catch (e2) {}
             try { this.recordLastCommand(null, { success: false }); } catch (eUi) {}
             this.isProcessing = false;
@@ -568,6 +577,7 @@
     };
 
     MCPPremiereBridge.prototype.releaseEvalScript = function() {
+        this.busyUntil = 0;
         this.evalScriptBusy = false;
         this.isProcessing = false;
         this.pumpEvalScript();
@@ -644,6 +654,10 @@
                 // restarts (GitHub issue 86).
             }, timeoutMs);
 
+            // FalconCut: скрипт біткенше (ең көбі timeoutMs) панель сигналды сирек жазады —
+            // Premiere бос болмағанда таймер кешігеді. Әр сигнал «бос емеспін» белгісін алып жүреді.
+            self.busyUntil = Date.now() + timeoutMs + 5000;
+            self.writeHeartbeat();
             this.csInterface.evalScript(fullScript, function(result) {
                 clearTimeout(timeoutId);
                 // Defer result handling and lock release off the evalScript stack so
@@ -697,10 +711,14 @@
         try {
             var tempPath = this.getTempDirectory();
             if (!tempPath) return;
-            fs.writeFileSync(path.join(tempPath, 'bridge-heartbeat.json'), JSON.stringify({
+            var beat = {
                 t: Date.now(),
                 started: !!this.isConnected
-            }));
+            };
+            // FalconCut: Premiere ұзақ скриптті орындап жатқанда панель сигналды сирек жазады.
+            // busyUntil серверге «бос емеспін, бірақ тірімін» дейді (скрипт біткенде нөлденеді).
+            if (this.busyUntil && this.busyUntil > Date.now()) beat.busyUntil = this.busyUntil;
+            fs.writeFileSync(path.join(tempPath, 'bridge-heartbeat.json'), JSON.stringify(beat));
         } catch (e) {}
     };
 

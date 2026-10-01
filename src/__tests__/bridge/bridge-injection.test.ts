@@ -40,6 +40,9 @@ const NOT_SCRIPT_BUILDERS = new Set([
   'constructor', 'initialize', 'cleanup', 'executeScript', 'waitForResponse',
   'detectPremiereProInstallation', 'initializeCommunication', 'isConnected',
   'getTempDir', 'runDiagnostics',
+  // FalconCut: бұлар скрипт жасамайды, Premiere процесін нақты тексереді (tasklist/pgrep).
+  // Premiere ашық тұрғанда ensureHost әр шақыруда 45 с күтіп, тест 9 минутқа созылатын.
+  'ensureHost', 'isPremiereProcessRunning', 'launchPremiere', 'waitForStartedHeartbeat', 'readHeartbeat',
 ]);
 
 function payloadRuns(script: string): boolean {

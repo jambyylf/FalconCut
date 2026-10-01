@@ -21,6 +21,9 @@ const execFileAsync = promisify(execFile);
 export const BRIDGE_HEARTBEAT_FILE = 'bridge-heartbeat.json';
 export const BRIDGE_PANEL_ABSENT_MS = 1500;
 export const BRIDGE_HEARTBEAT_STALE_MS = 2500;
+// FalconCut: панель ұзақ скрипт алдында busyUntil жазады (ең көбі 300 с скрипт + қор).
+// Бұдан ұзақ «бос емеспін» белгісіне сенбейміз — панель құлап қалса, мәңгі күтпеу үшін.
+export const BRIDGE_MAX_BUSY_MS = 330000;
 export const HEALTH_CHECK_TIMEOUT_MS = 8000;
 export const BRIDGE_PANEL_NOT_RUNNING =
   'MCP Bridge is not running. Open Adobe Premiere Pro. The FalconCut panel auto-starts the bridge when Premiere opens it. If the panel is missing, choose Window > Extensions > FalconCut. Call verify_premiere_connection once rather than retrying other tools.';
@@ -1000,6 +1003,8 @@ export class PremiereProBridge implements PremiereProTransport {
   private tempDir: string;
   private uxpProcess?: ChildProcess;
   private isInitialized = false;
+  /** FalconCut: соңғы дұрыс оқылған сигнал (файл жазылып жатқанда оқылса, соны қолданамыз). */
+  private lastHeartbeat: { t: number; started: boolean; busyUntil: number } | null = null;
   private premiereInstallPath: string | null = null;
   private premiereLaunchPath: string | null = null;
 
@@ -1357,15 +1362,31 @@ export class PremiereProBridge implements PremiereProTransport {
   }
 
   private async readHeartbeat(): Promise<{ t: number; started: boolean } | null> {
+    let raw: string;
     try {
-      const raw = await fs.readFile(join(this.tempDir, BRIDGE_HEARTBEAT_FILE), 'utf8');
-      const parsed = JSON.parse(raw) as { t?: unknown; started?: unknown };
-      if (typeof parsed?.t !== 'number' || !Number.isFinite(parsed.t)) return null;
-      if (Date.now() - parsed.t > BRIDGE_HEARTBEAT_STALE_MS) return null;
-      return { t: parsed.t, started: parsed.started === true };
+      raw = await fs.readFile(join(this.tempDir, BRIDGE_HEARTBEAT_FILE), 'utf8');
     } catch {
       return null;
     }
+    let beat = this.lastHeartbeat;
+    try {
+      const parsed = JSON.parse(raw) as { t?: unknown; started?: unknown; busyUntil?: unknown };
+      if (typeof parsed?.t !== 'number' || !Number.isFinite(parsed.t)) return null;
+      // FalconCut: Premiere ұзақ скриптті орындағанда панель сигнал жаза алмайды. Скрипт
+      // алдында жазылған busyUntil-ге дейін панель бос емес, бірақ тірі деп есептеледі.
+      const busyUntil = typeof parsed.busyUntil === 'number' && Number.isFinite(parsed.busyUntil)
+        ? Math.min(parsed.busyUntil, parsed.t + BRIDGE_MAX_BUSY_MS)
+        : 0;
+      beat = { t: parsed.t, started: parsed.started === true, busyUntil };
+      this.lastHeartbeat = beat;
+    } catch {
+      // FalconCut: панель файлды секунд сайын қайта жазады; дәл сол сәтте оқысақ, бос не
+      // жартылай мәтін аламыз. Бұл «панель жоқ» дегенді білдірмейді — соңғы дұрыс сигналды
+      // қолданамыз (ол да ескірсе, төмендегі тексеріс бәрібір null қайтарады).
+    }
+    if (!beat) return null;
+    if (Date.now() - beat.t > BRIDGE_HEARTBEAT_STALE_MS && Date.now() >= beat.busyUntil) return null;
+    return { t: beat.t, started: beat.started };
   }
 
   private async waitForResponse(responseFile: string, timeout = 60000): Promise<any> {
