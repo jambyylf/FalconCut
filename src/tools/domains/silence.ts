@@ -6,21 +6,18 @@
  *   2) таңдалған дыбыс трегіндегі әр клиптің дыбысы ffmpeg silencedetect арқылы талданады;
  *   3) үзілістерден кесінділер құрылады (екі жағынан тыныштық қалады, кадрға тураланады);
  *   4) apply=false болса — тек жоспар қайтарылады;
- *   5) apply=true болса — әдепкіде секвенцияның КӨШІРМЕСІ жасалады, барлық тректер кесінді
- *      шекараларында кесіледі, кесілген аралық барлық тректен алынып, артындағының бәрі
- *      бірдей шамаға солға жылжиды. Әр тректі өз бөлігімен ripple етсе, сол жерде клипі жоқ
- *      трек (титр, музыка) жылжымай қалып, синхрон бұзылар еді.
- *   6) нәтиже Premiere-ден қайта оқылып, алдын ала есептелген орналасумен салыстырылады.
+ *   5) apply=true болса — әдепкіде секвенцияның КӨШІРМЕСІ жасалады да, кесінділер барлық
+ *      тректен бірге алынады (../range-cut.ts), нәтиже қайта оқылып тексеріледі.
  */
 
 import { z } from 'zod';
 import type { ToolContext, ToolModule } from '../context.js';
-import { buildCuts, compareLayouts, simulateCuts, type Interval, type TimelineClip } from '../../utils/silence.js';
+import { buildCuts, type Interval } from '../../utils/silence.js';
 import { detectSilenceWindows, FfmpegNotFoundError, ffmpegInstallHint } from '../../utils/ffmpeg.js';
 import { round } from '../../utils/audio-correlation.js';
 import { serverTranslate } from '../../i18n.js';
 import { duplicateSequence } from './sequence.js';
-import { razorTimelineAtTime } from './timeline.js';
+import { applyRangeCuts, readTimeline, type TimelineSnapshot } from '../range-cut.js';
 
 /** Үнсіздік табатын функция (тесттерде ауыстырылады). */
 export type SilenceDetector = (mediaPath: string, startSeconds: number, durationSeconds: number, thresholdDb: number, minSilenceSeconds: number) => Promise<Interval[]>;
@@ -45,16 +42,6 @@ export const silenceTools: ToolModule[] = [
     run: (ctx, args) => cutSilences(ctx, args),
   },
 ];
-
-interface Snapshot {
-  success: boolean;
-  error?: string;
-  sequenceId: string;
-  sequenceName: string;
-  frameSeconds: number;
-  sequenceEnd: number;
-  clips: Array<TimelineClip & { mediaPath?: string }>;
-}
 
 export async function cutSilences(ctx: ToolContext, args: z.infer<typeof cutSchema>, detect: SilenceDetector = detectSilenceWindows): Promise<any> {
   const audioTrackIndex = args.audioTrackIndex ?? 0;
@@ -133,7 +120,7 @@ export async function cutSilences(ctx: ToolContext, args: z.infer<typeof cutSche
   }
 
   // 2) Қай секвенция кесіледі: әдепкіде көшірме
-  let target: Snapshot = snapshot;
+  let target: TimelineSnapshot = snapshot;
   let newSequenceName: string | undefined;
   if (!inPlace) {
     newSequenceName = args.newSequenceName ?? `${snapshot.sequenceName} — ${serverTranslate('silence.sequence_suffix', 'no silences')}`;
@@ -161,29 +148,11 @@ export async function cutSilences(ctx: ToolContext, args: z.infer<typeof cutSche
     ...extra,
   });
 
-  // 3) Барлық тректі кесінді шекараларында кесу (басы мен соңы керек емес)
-  const boundaries = [...new Set(cuts.flat())].filter((time) => time > frameSeconds / 2 && time < target.sequenceEnd - frameSeconds / 2).sort((a, b) => b - a);
-  for (const time of boundaries) {
-    const razor: any = await razorTimelineAtTime(ctx, target.sequenceId, time);
-    if (!razor || razor.success !== true) return failure('razor_failed', `Could not cut the tracks at ${time}s: ${razor?.error ?? 'unknown error'}.`);
-  }
-
-  // 4) Кесінділерді соңынан басына қарай алу — алдыңғылардың уақыты өзгермейді
-  const expected = simulateCuts(target.clips, cuts);
-  for (const [start, end] of [...cuts].reverse()) {
-    const removed: any = await ctx.bridge.executeScript(rangeCutScript(target.sequenceId, start, end));
-    if (!removed || removed.success !== true) {
-      return failure('cut_failed', `Could not remove ${round(start, 3)}-${round(end, 3)}s: ${removed?.error ?? 'unknown error'}.`, { details: removed });
-    }
-  }
-
-  // 5) Қайта оқу және салыстыру
-  const after = await readTimeline(ctx, target.sequenceId, audioTrackIndex);
-  const verification = after.success
-    ? compareLayouts(expected, after.clips, frameSeconds / 2 + 0.001)
-    : { ok: false, expectedPieces: expected.length, actualPieces: 0, mismatches: [after.error ?? 'could not read the timeline back'] };
-  if (!verification.ok) {
-    return failure('verification_failed', `The timeline after cutting does not match the expected layout (${verification.mismatches[0] ?? 'unknown difference'}).`, { verification });
+  // 3) Барлық тректен бірге кесу және Premiere-ден қайта оқып тексеру
+  const outcome = await applyRangeCuts(ctx, target, cuts);
+  if (!outcome.ok) {
+    const { status, error, ...extra } = outcome;
+    return failure(status, error, extra);
   }
   return {
     success: true,
@@ -192,112 +161,7 @@ export async function cutSilences(ctx: ToolContext, args: z.infer<typeof cutSche
     ...plan,
     targetSequenceId: target.sequenceId,
     ...(newSequenceName ? { newSequenceName, originalSequenceId: snapshot.sequenceId } : {}),
-    newDuration: round(after.sequenceEnd, 3),
-    verification,
+    newDuration: round(outcome.after.sequenceEnd, 3),
+    verification: outcome.verification,
   };
-}
-
-async function readTimeline(ctx: ToolContext, sequenceId: string | null, audioTrackIndex: number): Promise<Snapshot> {
-  const result: any = await ctx.bridge.executeScript(`
-      try {
-        var seq = ${sequenceId ? `__findSequence(${JSON.stringify(sequenceId)})` : 'app.project.activeSequence'};
-        if (!seq) return JSON.stringify({ success: false, error: "Sequence not found" });
-        var clips = [];
-        var sequenceEnd = 0;
-        var groups = [["video", seq.videoTracks], ["audio", seq.audioTracks]];
-        for (var g = 0; g < groups.length; g++) {
-          var tracks = groups[g][1];
-          for (var t = 0; t < tracks.numTracks; t++) {
-            var track = tracks[t];
-            for (var c = 0; c < track.clips.numItems; c++) {
-              var clip = track.clips[c];
-              var snap = __clipSnapshot({ clip: clip, track: track, trackIndex: t, clipIndex: c, trackType: groups[g][0], sequence: seq });
-              if (groups[g][0] === "audio" && t === ${audioTrackIndex}) {
-                var mediaPath = "";
-                try { mediaPath = clip.projectItem ? String(clip.projectItem.getMediaPath()) : ""; } catch (ePath) {}
-                snap.mediaPath = mediaPath;
-              }
-              if (snap.end > sequenceEnd) sequenceEnd = snap.end;
-              clips.push(snap);
-            }
-          }
-        }
-        return JSON.stringify({ success: true, sequenceId: String(seq.sequenceID), sequenceName: String(seq.name), frameSeconds: __frameSecondsOf(seq), sequenceEnd: sequenceEnd, clips: clips });
-      } catch (e) {
-        return JSON.stringify({ success: false, error: e.toString() });
-      }
-    `);
-  if (!result || result.success !== true || !Array.isArray(result.clips)) {
-    return { success: false, error: result?.error ?? 'Could not read the sequence', sequenceId: '', sequenceName: '', frameSeconds: 0, sequenceEnd: 0, clips: [] };
-  }
-  return result as Snapshot;
-}
-
-/**
- * [start, end] аралығын барлық тректен алып, артындағының бәрін (end − start)-ке солға жылжытады.
- * Шекарада кесілмей қалған клип болса (мысалы, құлыпталған трек), ештеңеге тимей тоқтайды.
- */
-export function rangeCutScript(sequenceId: string, start: number, end: number): string {
-  return `
-      try {
-        var seq = __findSequence(${JSON.stringify(sequenceId)});
-        if (!seq) return JSON.stringify({ success: false, error: "Sequence not found" });
-        var cutStart = ${start};
-        var cutEnd = ${end};
-        var removedLength = cutEnd - cutStart;
-        var eps = __frameSecondsOf(seq) / 4;
-        var groups = [seq.videoTracks, seq.audioTracks];
-        var straddling = [];
-        for (var g = 0; g < groups.length; g++) {
-          for (var t = 0; t < groups[g].numTracks; t++) {
-            var track = groups[g][t];
-            for (var c = 0; c < track.clips.numItems; c++) {
-              var clip = track.clips[c];
-              var s = __timeSeconds(clip.start);
-              var e = __timeSeconds(clip.end);
-              var crossesStart = s < cutStart - eps && e > cutStart + eps;
-              var crossesEnd = s < cutEnd - eps && e > cutEnd + eps;
-              if (crossesStart || crossesEnd) straddling.push((g === 0 ? "V" : "A") + (t + 1) + " " + clip.name);
-            }
-          }
-        }
-        if (straddling.length) {
-          return JSON.stringify({ success: false, error: "These clips were not cut at the range boundary (locked track?): " + straddling.join("; "), straddling: straddling });
-        }
-        var lifted = 0;
-        for (var g2 = 0; g2 < groups.length; g2++) {
-          for (var t2 = 0; t2 < groups[g2].numTracks; t2++) {
-            var liftTrack = groups[g2][t2];
-            for (var c2 = liftTrack.clips.numItems - 1; c2 >= 0; c2--) {
-              var inside = liftTrack.clips[c2];
-              if (__timeSeconds(inside.start) >= cutStart - eps && __timeSeconds(inside.end) <= cutEnd + eps) {
-                inside.remove(false, true);
-                lifted++;
-              }
-            }
-          }
-        }
-        var later = [];
-        for (var g3 = 0; g3 < groups.length; g3++) {
-          for (var t3 = 0; t3 < groups[g3].numTracks; t3++) {
-            var laterTrack = groups[g3][t3];
-            for (var c3 = 0; c3 < laterTrack.clips.numItems; c3++) {
-              var after = laterTrack.clips[c3];
-              var afterStart = __timeSeconds(after.start);
-              if (afterStart >= cutEnd - eps) later.push({ clip: after, target: afterStart - removedLength });
-            }
-          }
-        }
-        // Earliest first, so every clip moves into space the previous one has already left.
-        later.sort(function (x, y) { return x.target - y.target; });
-        var moved = 0;
-        for (var i = 0; i < later.length; i++) {
-          var delta = later[i].target - __timeSeconds(later[i].clip.start);
-          if (Math.abs(delta) > eps) { later[i].clip.move(delta); moved++; }
-        }
-        return JSON.stringify({ success: true, lifted: lifted, moved: moved });
-      } catch (e) {
-        return JSON.stringify({ success: false, error: e.toString() });
-      }
-    `;
 }

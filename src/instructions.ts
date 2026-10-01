@@ -21,6 +21,8 @@ export const MCP_SERVER_INSTRUCTIONS = [
   '- Inspect before mutating. Prefer list_sequences, search_tools for list_project_items / list_sequence_tracks, or the premiere://project/* resources unless the user already gave exact IDs.',
   '- Report real Premiere limitations instead of claiming success. Do not invent file paths, clip ids, or .mogrt/.sqpreset files.',
   '- replace_clip with preserveEffects (default true) restores trim, enabled, and Motion, and re-applies other effects. move_clip_to_track restores source in/out and refuses an occupied destination unless overwrite is true.',
+  // FalconCut: синхронды сақтайтын құралдар — агент оларды әр тректі бөлек ripple етудің орнына таңдауы үшін
+  '- To remove part of a multi-track sequence (cut the head or tail, a section, or pauses), use cut_range or cut_silences: they cut every track at once and keep cameras, audio, titles and music in sync. Do not ripple-delete track by track. To line up two cameras, use sync_by_audio (report first, then apply:true).',
   '',
   // FalconCut: .mcp.json арқылы қосылғанда skill жүктелмеуі мүмкін, сондықтан тіл ережесі осында да тұр
   'Language (FalconCut):',

@@ -75,6 +75,20 @@ describe('simulateCuts', () => {
     expect(audio.map((clip) => [clip.start, clip.end])).toEqual(video.map((clip) => [clip.start, clip.end]));
   });
 
+  it("keeps each clip's own timeline-to-source rate (speed changes, graphics)", () => {
+    // 200% жылдамдық: 6 с таймлайн = файлдың 12 секунды. Графика: outPoint ұзындықтан 2 кадр қысқа.
+    const fast: TimelineClip = { name: 'fast', trackType: 'video', trackIndex: 2, start: 4, end: 10, inPoint: 50, outPoint: 62 };
+    const graphic: TimelineClip = { name: 'graphic', trackType: 'video', trackIndex: 3, start: 12, end: 18, inPoint: 9814, outPoint: 9819.92 };
+    const result = simulateCuts([fast, graphic], cuts);
+    expect(result.filter((clip) => clip.name === 'fast').map((clip) => [clip.start, clip.end, clip.inPoint, clip.outPoint])).toEqual([
+      [4, 4.16, 50, 50.32],
+      [4.16, 8.32, 53.68, 62],
+    ]);
+    // Бөлінбеген, тек жылжыған клип: in/out мүлде өзгермейді
+    const moved = result.find((clip) => clip.name === 'graphic')!;
+    expect([moved.start, moved.end, moved.inPoint, moved.outPoint]).toEqual([9.68, 15.68, 9814, 9819.92]);
+  });
+
   it('drops a clip that lies entirely inside a cut', () => {
     const inside: TimelineClip = { trackType: 'video', trackIndex: 2, start: 4.5, end: 5.5, inPoint: 0, outPoint: 1 };
     expect(simulateCuts([inside], cuts)).toEqual([]);

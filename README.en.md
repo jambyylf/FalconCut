@@ -16,9 +16,10 @@
 
 FalconCut is local software that lets AI assistants such as Claude Code, Claude Desktop, and Codex work with your Premiere Pro project. You ask the assistant for an edit in plain language, and it performs real editing operations inside Premiere.
 
-- **285 Premiere tools:** projects, media import, sequences, timeline editing, effects, color, audio, captions, markers, and export.
+- **286 Premiere tools:** projects, media import, sequences, timeline editing, effects, color, audio, captions, markers, and export.
 - **Two-camera sync by audio** (`sync_by_audio`): measures at several points, checks drift and confidence, and only then moves the clip.
 - **Linked picture and sound stay together:** moving, removing or trimming a clip also moves, removes or trims its linked audio (`withLinked`, default true).
+- **Cut a range from every track** (`cut_range`): "cut everything before 00:00:22:03" or "cut the tail" in one command, without cameras and audio drifting apart. Takes seconds or a timecode.
 - **Cut silences** (`cut_silences`): finds pauses in speech and removes them from every track at once, so nothing drifts out of sync. By default it shows the plan first and works on a duplicate of the sequence.
 - **The FalconCut panel inside Premiere** — Kazakh interface by default, English on request.
 - **A Kazakh-speaking assistant:** the bundled agent skill talks to you in Kazakh and checks that ә, ғ, қ, ң, ө, ұ, ү, һ, і render correctly in captions and titles.

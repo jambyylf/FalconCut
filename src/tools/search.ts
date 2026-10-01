@@ -124,6 +124,7 @@ const TOOL_ALIASES: Record<string, string> = {
   add_text_overlay: 'title caption mogrt graphics type',
   detect_silence: 'quiet gaps ffmpeg audio silence',
   cut_silences: 'remove pauses silence jump cut dead air trim quiet gaps talking head',
+  cut_range: 'cut head tail beginning end remove section range timecode ripple all tracks keep sync trim start',
   sync_by_audio: 'synchronize synchronise align two cameras multicam waveform offset drift camera sync',
   razor_timeline_at_time: 'cut split blade razor',
   add_to_timeline: 'place insert overwrite put clip on sequence',

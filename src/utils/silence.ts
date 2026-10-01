@@ -83,7 +83,8 @@ export interface TimelineClip {
 /**
  * Кесінділерден кейін әр тректе қалатын бөліктер: кесілген аралықтағы бөлік жойылады,
  * одан кейінгі барлығы (барлық трек бірдей) алдындағы кесінділердің жалпы ұзындығына
- * солға жылжиды. Жылдамдығы 100%-дан басқа клиптер ескерілмейді.
+ * солға жылжиды. Клиптің өз «таймлайн → файл» қатынасы сақталады (жылдамдығы 100%-дан
+ * басқа клип, графика): бөлінбеген клиптің inPoint/outPoint-ы мүлде өзгермейді.
  */
 export function simulateCuts(clips: TimelineClip[], cuts: Interval[]): TimelineClip[] {
   const ordered = [...cuts].sort((a, b) => a[0] - b[0]);
@@ -91,6 +92,9 @@ export function simulateCuts(clips: TimelineClip[], cuts: Interval[]): TimelineC
     ordered.reduce((sum, [start, end]) => (end <= time + 1e-9 ? sum + (end - start) : sum), 0);
   const result: TimelineClip[] = [];
   for (const clip of clips) {
+    const span = clip.end - clip.start;
+    const sourceSpan = clip.outPoint - clip.inPoint;
+    const rate = span > 1e-9 && Number.isFinite(sourceSpan) && sourceSpan > 0 ? sourceSpan / span : 1;
     const boundaries = [clip.start, clip.end];
     for (const [start, end] of ordered) {
       if (start > clip.start && start < clip.end) boundaries.push(start);
@@ -104,7 +108,7 @@ export function simulateCuts(clips: TimelineClip[], cuts: Interval[]): TimelineC
       const inside = ordered.some(([start, end]) => pieceStart >= start - 1e-9 && pieceEnd <= end + 1e-9);
       if (inside) continue;
       const shift = removedBefore(pieceStart);
-      const inPoint = clip.inPoint + (pieceStart - clip.start);
+      const inPoint = clip.inPoint + (pieceStart - clip.start) * rate;
       result.push({
         ...(clip.name !== undefined ? { name: clip.name } : {}),
         trackType: clip.trackType,
@@ -112,7 +116,7 @@ export function simulateCuts(clips: TimelineClip[], cuts: Interval[]): TimelineC
         start: round6(pieceStart - shift),
         end: round6(pieceEnd - shift),
         inPoint: round6(inPoint),
-        outPoint: round6(inPoint + (pieceEnd - pieceStart)),
+        outPoint: round6(inPoint + (pieceEnd - pieceStart) * rate),
       });
     }
   }
